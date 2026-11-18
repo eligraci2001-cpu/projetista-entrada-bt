@@ -1,0 +1,765 @@
+
+/* ===================== Normas ===================== */
+const NORMAS={
+ cpfl:{nome:"CPFL Paulista / Piratininga / Santa Cruz",curto:"CPFL",
+   ref:"CPFL GED 13 – Fornecimento em Tensão Secundária de Distribuição, versão 46.0 (DIST-13-2026-RE-NOR), publicada em 19/03/2026",
+   tensoes:["127/220","220/380"]},
+ enel:{nome:"Enel Distribuição São Paulo",curto:"Enel SP",
+   ref:"Enel Especificação Técnica nº 0017 (GRI-EDBR-CNC-GRI-0017 / CNC-NDBR-DBR-24-1569-EDBR) – Fornecimento de Energia Elétrica em Tensão Secundária de Distribuição até 1 kV – Conexão Individual, versão 02 de 06/03/2025",
+   tensoes:["127/220"]}};
+// CPFL GED 13 – Tabela 1 (1A, 1B, 1C). sel: "ci" = carga instalada (kW), "d" = demanda (kVA)
+const CPFL={
+ "127/220":[
+  {cat:"A1",f:1,sel:"ci",max:6,disj:32,cu:6,al:10,elet:32,at:6,poste:"90 daN",caixa:"Tipo II, Tipo E ou policarbonato",med:"Direta",mot:"FN 1 cv"},
+  {cat:"A2",f:1,sel:"ci",max:12,disj:63,cu:16,al:16,elet:32,at:10,poste:"90 daN",caixa:"Tipo II, Tipo E ou policarbonato",med:"Direta",mot:"FN 2 cv"},
+  {cat:"B1",f:2,sel:"ci",max:18,disj:63,cu:16,al:16,elet:32,at:10,poste:"90 daN",caixa:"Tipo II, Tipo E ou policarbonato",med:"Direta",mot:"FN 2 cv · FF 3 cv"},
+  {cat:"B2",f:2,sel:"ci",max:25,disj:80,cu:25,al:25,elet:40,at:10,poste:"90 daN",caixa:"Tipo II, Tipo E ou policarbonato",med:"Direta",mot:"FN 2 cv · FF 5 cv"},
+  {cat:"C1",f:3,sel:"d",max:23,disj:63,cu:16,al:25,elet:40,at:10,poste:"90 daN",caixa:"Tipo III, Tipo E ou policarbonato",med:"Direta",mot:"FN 2 · FF 3 · FFFN 15 cv"},
+  {cat:"C2",f:3,sel:"d",max:30,disj:80,cu:25,al:25,elet:40,at:10,poste:"90 daN",caixa:"Tipo III, Tipo E ou policarbonato",med:"Direta",mot:"FN 2 · FF 5 · FFFN 20 cv"},
+  {cat:"C3",f:3,sel:"d",max:38,disj:100,cu:35,al:35,elet:40,at:10,poste:"90 daN",caixa:"Tipo III, Tipo E ou policarbonato",med:"Direta",mot:"FN 3 · FF 7,5 · FFFN 25 cv"},
+  {cat:"C4",f:3,sel:"d",max:47,disj:125,cu:50,al:50,elet:50,at:16,poste:"200 daN",caixa:"Tipo H",med:"Indireta",mot:"FN 5 · FF 7,5 · FFFN 30 cv"},
+  {cat:"C5",f:3,sel:"d",max:57,disj:150,cu:70,al:70,elet:60,at:25,poste:"200 daN",caixa:"Tipo H",med:"Indireta",mot:"FN 7,5 · FF 10 · FFFN 40 cv"},
+  {cat:"C6",f:3,sel:"d",max:76,disj:200,cu:95,al:95,elet:60,at:35,poste:"300 daN",caixa:"Tipo H",med:"Indireta",mot:"FN 7,5 · FF 15 · FFFN 50 cv"}],
+ "220/380":[
+  {cat:"A3",f:1,sel:"ci",max:10,disj:32,cu:6,al:10,elet:32,at:6,poste:"90 daN",caixa:"Tipo II, Tipo E ou policarbonato",med:"Direta",mot:"FN 3 cv"},
+  {cat:"A4",f:1,sel:"ci",max:15,disj:63,cu:16,al:16,elet:32,at:10,poste:"90 daN",caixa:"Tipo II, Tipo E ou policarbonato",med:"Direta",mot:"FN 5 cv"},
+  {cat:"B3",f:2,sel:"ci",max:25,disj:63,cu:16,al:16,elet:32,at:10,poste:"90 daN",caixa:"Tipo II, Tipo E ou policarbonato",med:"Direta",mot:"FN 5 cv · FF 10 cv"},
+  {cat:"C7",f:3,sel:"d",max:26,disj:40,cu:10,al:16,elet:40,at:6,poste:"90 daN",caixa:"Tipo III, Tipo E ou policarbonato",med:"Direta",mot:"FN 3 · FF 5 · FFFN 20 cv"},
+  {cat:"C8",f:3,sel:"d",max:40,disj:63,cu:16,al:16,elet:40,at:10,poste:"90 daN",caixa:"Tipo III, Tipo E ou policarbonato",med:"Direta",mot:"FN 3 · FF 5 · FFFN 30 cv"},
+  {cat:"C9",f:3,sel:"d",max:52,disj:80,cu:25,al:25,elet:40,at:10,poste:"90 daN",caixa:"Tipo III, Tipo E ou policarbonato",med:"Direta",mot:"FN 5 · FF 10 · FFFN 30 cv"},
+  {cat:"C10",f:3,sel:"d",max:66,disj:100,cu:35,al:35,elet:40,at:10,poste:"200 daN",caixa:"Tipo III, Tipo E ou policarbonato",med:"Direta",mot:"FN 7,5 · FF 12 · FFFN 40 cv"},
+  {cat:"C11",f:3,sel:"d",max:82,disj:125,cu:50,al:50,elet:50,at:16,poste:"200 daN",caixa:"Tipo H",med:"Indireta",mot:"FN 7,5 · FF 12 · FFFN 50 cv"}]};
+// Enel ET 0017 – Anexo B (rede aérea, Enel SP). Escolha: menor disjuntor ≥ corrente de demanda (nota 8)
+const ENEL_TIPO={A:{f:1,ciMax:12},B:{f:2,ciMax:20},C:{f:3,ciMax:75}}; // Tabela 2, 127/220 V estrela
+const ENEL=[
+ {cat:"A1",f:1,disj:50,rc:"1x10 (10)",cu:10,at:10,elet:32,poste:"100 daN",med:"Direta",pc:"Medidor"},
+ {cat:"A2",f:1,disj:63,rc:"1x16 (10)",cu:16,at:16,elet:32,poste:"100 daN",med:"Direta",pc:"Medidor"},
+ {cat:"B3",f:2,disj:50,rc:"2x10 (10)",cu:10,at:10,elet:32,poste:"100 daN",med:"Direta",pc:"Medidor"},
+ {cat:"B4",f:2,disj:63,rc:"2x16 (16)",cu:16,at:16,elet:32,poste:"100 daN",med:"Direta",pc:"Medidor"},
+ {cat:"B5",f:2,disj:80,rc:"2x25 (25)",cu:25,at:16,elet:32,poste:"200 daN",med:"Direta",pc:"Poste"},
+ {cat:"B6",f:2,disj:100,rc:"3x35 (54,6)",cu:35,at:16,elet:40,poste:"200 daN",med:"Direta",pc:"Poste"},
+ {cat:"B7",f:2,disj:125,rc:"3x35 (54,6)",cu:50,at:25,elet:60,poste:"200 daN",med:"Indireta",pc:"Poste"},
+ {cat:"B8",f:2,disj:160,rc:"3x50 (54,6)",cu:70,at:35,elet:60,poste:"200 daN",med:"Indireta",pc:"Poste"},
+ {cat:"B9",f:2,disj:200,rc:"3x95 (54,6)",cu:95,at:50,elet:60,poste:"300 daN (concreto)",med:"Indireta",pc:"Poste"},
+ {cat:"B10",f:2,disj:225,rc:"3x95 (54,6)",cu:120,at:70,elet:85,poste:"300 daN (concreto)",med:"Indireta",pc:"Poste",consulta:true},
+ {cat:"B11",f:2,disj:275,rc:"3x150 (80)",cu:150,at:95,elet:85,poste:"300 daN (concreto)",med:"Indireta",pc:"Poste",consulta:true},
+ {cat:"B12",f:2,disj:300,rc:"3x150 (80)",cu:185,at:95,elet:85,poste:"300 daN (concreto)",med:"Indireta",pc:"Poste",consulta:true},
+ {cat:"C3",f:3,disj:50,rc:"3x10 (10)",cu:10,at:10,elet:32,poste:"200 daN",med:"Direta",pc:"Poste"},
+ {cat:"C4",f:3,disj:63,rc:"3x16 (16)",cu:16,at:16,elet:32,poste:"100 daN",med:"Direta",pc:"Poste"},
+ {cat:"C5",f:3,disj:80,rc:"3x25 (25)",cu:25,at:16,elet:32,poste:"200 daN",med:"Direta",pc:"Poste"},
+ {cat:"C6",f:3,disj:100,rc:"3x35 (54,6)",cu:35,at:16,elet:40,poste:"200 daN",med:"Direta",pc:"Poste"},
+ {cat:"C7",f:3,disj:125,rc:"3x35 (54,6)",cu:50,at:25,elet:60,poste:"200 daN",med:"Indireta",pc:"Poste"},
+ {cat:"C8",f:3,disj:160,rc:"3x50 (54,6)",cu:70,at:35,elet:60,poste:"200 daN",med:"Indireta",pc:"Poste"},
+ {cat:"C9",f:3,disj:200,rc:"3x95 (54,6)",cu:95,at:50,elet:60,poste:"300 daN (concreto)",med:"Indireta",pc:"Poste"},
+ {cat:"C10",f:3,disj:225,rc:"3x95 (54,6)",cu:120,at:70,elet:85,poste:"300 daN (concreto)",med:"Indireta",pc:"Poste",consulta:true},
+ {cat:"C11",f:3,disj:275,rc:"3x150 (80)",cu:150,at:95,elet:85,poste:"300 daN (concreto)",med:"Indireta",pc:"Poste",consulta:true},
+ {cat:"C12",f:3,disj:300,rc:"3x150 (80)",cu:185,at:95,elet:85,poste:"300 daN (concreto)",med:"Indireta",pc:"Poste",consulta:true}];
+const DN_POL={20:"1/2\"",25:"3/4\"",32:"1\"",40:"1.1/4\"",50:"1.1/2\"",60:"2\"",75:"2.1/2\"",85:"3\""};
+
+/* GED 13 – fatores de demanda (item 6.22.1, Tabelas 3 a 11) */
+const T3=[[1,.86],[2,.75],[3,.66],[4,.59],[5,.52],[6,.45],[7,.40],[8,.35],[9,.31],[10,.27],[Infinity,.24]];
+const T4=[1,1,1,.84,.76,.70,.65,.60,.57,.54,.52,.49,.48,.46,.45,.44,.43,.42,.41,.40,.40,.39,.39,.39,.38,.38];
+const fdT4=n=>n<=0?0:T4[Math.min(n,25)];
+const fdT5=n=>n<=0?0:n===1?1:n===2?.72:.62;
+const fdT6=n=>n<=0?0:n===1?1:n<=4?.70:n<=6?.60:.50;
+const fdT7=n=>n<=0?0:[0,1,.60,.48,.40,.37,.35,.33,.32,.30][n]??(n<=11?.28:.26);
+const fdT9=n=>n<=10?1:n<=20?.90:n<=30?.82:n<=40?.80:n<=50?.77:.75;
+const fdT10=i=>i===0?1:i===1?.9:i<=4?.8:.7;
+const fdT11=i=>i===0?1:i===1?.7:i===2?.4:.3;
+const TIPOS={
+ ilum:{n:"Iluminação e TUGs",par:"a",tab:"Tab. 3 / 15"},
+ aquec:{n:"Chuveiro, torneira, aquecedor de passagem, ferro",par:"b",tab:"Tab. 4"},
+ boiler:{n:"Aquecedor central / boiler",par:"c",tab:"Tab. 5"},
+ cozinha:{n:"Secadora, forno elétrico, lava-louças, micro-ondas",par:"d",tab:"Tab. 6"},
+ fogao:{n:"Fogão elétrico",par:"e",tab:"Tab. 7"},
+ ar:{n:"Ar-condicionado",par:"f",tab:"Tab. 8 / 9"},
+ motor:{n:"Motor / máquina de solda a motor",par:"g",tab:"Tab. 10"},
+ especial:{n:"Equipamento especial (solda, raios X)",par:"h",tab:"Tab. 11"},
+ hidro:{n:"Hidromassagem",par:"i",tab:"Tab. 10"},
+ outros:{n:"Outros / recarga de VE (FD 1)",par:"j",tab:"FD 1"}};
+const PRESETS=[
+ ["Iluminação (total)","ilum",1,1000,1],["Tomadas de uso geral (total)","ilum",1,2000,1],
+ ["Chuveiro elétrico 5.500 W","aquec",1,5500,1],["Chuveiro elétrico 7.500 W","aquec",1,7500,1],["Torneira elétrica 5.500 W","aquec",1,5500,1],
+ ["Aquecedor de passagem 6.000 W","aquec",1,6000,1],["Ferro elétrico 1.000 W","aquec",1,1000,1],["Boiler 2.000 W","boiler",1,2000,1],
+ ["Forno elétrico 2.000 W","cozinha",1,2000,1],["Micro-ondas 1.300 W","cozinha",1,1300,1],["Lava-louças 1.500 W","cozinha",1,1500,1],["Secadora de roupa 3.500 W","cozinha",1,3500,1],
+ ["Fogão elétrico / cooktop 6.000 W","fogao",1,6000,1],
+ ["Ar-condicionado 7.100 BTU/h (900 W)","ar",1,900,.82],["Ar-condicionado 10.000 BTU/h (1.400 W)","ar",1,1400,.85],["Ar-condicionado 12.000 BTU/h (1.600 W)","ar",1,1600,.84],
+ ["Ar-condicionado 18.000 BTU/h (2.600 W)","ar",1,2600,.91],["Ar-condicionado 30.000 BTU/h (3.600 W)","ar",1,3600,.90],
+ ["Motor monofásico 1/4 cv (bomba, portão)","motor",1,420,.64],["Motor monofásico 1/2 cv","motor",1,510,.66],["Motor monofásico 1 cv","motor",1,900,.67],
+ ["Hidromassagem 1.500 W","hidro",1,1500,1],["Máquina de lavar roupa 1.000 W","outros",1,1000,1],
+ ["Carregador veicular 7,4 kW","outros",1,7400,1]];
+const STATUS=[["rascunho","Rascunho",""],["pronto","Pronto p/ protocolar","info"],["protocolado","Protocolado","info"],["analise","Em análise","warn"],["pendencia","Com pendência","bad"],["aprovado","Aprovado","ok"],["vistoria","Vistoria agendada","warn"],["ligado","Ligado","ok"],["reprovado","Reprovado","bad"]];
+const SECOES=[6,10,16,25,35,50,70,95,120,150,185,240];
+const AMP_B1={6:[41,36],10:[57,50],16:[76,68],25:[101,89],35:[125,110],50:[151,134],70:[192,171],95:[232,207],120:[269,239],150:[309,275],185:[353,314],240:[415,370]};
+function defaultConfig(){return{kind:"config",dvMax:2,rho:0.0178,rt:{nome:"",registro:"",empresa:"",telefone:""}}}
+
+/* ===================== Estado ===================== */
+let S={projects:[],config:defaultConfig(),cur:null,tab:"dados",confirmDel:false};
+let store=null;
+const $=s=>document.querySelector(s);
+const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt=(n,d=2)=>Number.isFinite(n)?n.toLocaleString("pt-BR",{minimumFractionDigits:d,maximumFractionDigits:d}):"—";
+const mm=s=>fmt(s,0)+" mm²";
+const uid=()=>"p"+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,2400)}
+function cur(){return S.projects.find(p=>p.id===S.cur)||null}
+function stInfo(k){return STATUS.find(s=>s[0]===k)||STATUS[0]}
+
+function novoProjeto(extra={}){return Object.assign({kind:"projeto",id:uid(),nome:"Novo projeto",cliente:"",endereco:"",municipio:"",cep:"",
+  instalacao:"",finalidade:"Ligação nova",uso:"Residencial",conc:"cpfl",tensao:"127/220",entrada:"Aérea",trifasico:false,fdIlum:1,
+  distRamal:15,distAlim:10,status:"rascunho",protocolo:"",dataProtocolo:"",art:"",obs:"",
+  cargas:[],criadoEm:new Date().toISOString(),atualizadoEm:new Date().toISOString()},extra)}
+function exemplo(){return novoProjeto({nome:"EXEMPLO – Residência térrea",cliente:"Cliente Exemplo",endereco:"Rua das Acácias, 120",municipio:"Campinas",
+  conc:"cpfl",cargas:[
+  {d:"Iluminação (total)",t:"ilum",q:1,p:900,fp:1},{d:"Tomadas de uso geral (total)",t:"ilum",q:1,p:3600,fp:1},
+  {d:"Chuveiro elétrico 7.500 W",t:"aquec",q:2,p:7500,fp:1},{d:"Forno elétrico 2.000 W",t:"cozinha",q:1,p:2000,fp:1},
+  {d:"Micro-ondas 1.300 W",t:"cozinha",q:1,p:1300,fp:1},
+  {d:"Ar-condicionado 12.000 BTU/h (1.600 W)",t:"ar",q:2,p:1600,fp:.84},{d:"Motor monofásico 1/2 cv",t:"motor",q:1,p:510,fp:.66},
+  {d:"Motor monofásico 1/4 cv (bomba, portão)",t:"motor",q:1,p:420,fp:.64},{d:"Máquina de lavar roupa 1.000 W",t:"outros",q:1,p:1000,fp:1}]})}
+
+/* ===================== Cálculo ===================== */
+function calc(p,cfg){
+  const conc=NORMAS[p.conc]?p.conc:"cpfl";
+  const tensao=NORMAS[conc].tensoes.includes(p.tensao)?p.tensao:"127/220";
+  const [Vfn,Vff]=tensao==="220/380"?[220,380]:[127,220];
+  const g={};for(const k in TIPOS)g[k]={kw:0,kva:0,n:0,units:[]};
+  let CI=0;
+  for(const c of p.cargas){const q=Math.max(0,Math.round(+c.q||0)),w=Math.max(0,+c.p||0),fp=Math.min(1,Math.max(.1,+c.fp||1));
+    const G=g[TIPOS[c.t]?c.t:"outros"];const kw=q*w/1000;CI+=kw;G.kw+=kw;G.kva+=kw/fp;G.n+=q;for(let i=0;i<q;i++)G.units.push(w/1000/fp)}
+  const res=p.uso==="Residencial";
+  const P={};
+  const fdA=res?(T3.find(r=>g.ilum.kw<=r[0])[1]):(+p.fdIlum||1);
+  P.a={fd:fdA,v:g.ilum.kva*fdA,crit:res?`Tab. 3 (carga ${fmt(g.ilum.kw)} kW)`:"Tab. 15 – fator informado"};
+  P.b={fd:fdT4(g.aquec.n),crit:`Tab. 4 (${g.aquec.n} aparelho${g.aquec.n===1?"":"s"})`};P.b.v=g.aquec.kva*P.b.fd;
+  P.c={fd:fdT5(g.boiler.n),crit:`Tab. 5 (${g.boiler.n})`};P.c.v=g.boiler.kva*P.c.fd;
+  P.d={fd:fdT6(g.cozinha.n),crit:`Tab. 6 (${g.cozinha.n})`};P.d.v=g.cozinha.kva*P.d.fd;
+  P.e={fd:fdT7(g.fogao.n),crit:`Tab. 7 (${g.fogao.n})`};P.e.v=g.fogao.kva*P.e.fd;
+  P.f={fd:res?1:fdT9(g.ar.n),crit:res?"Residencial: FD 1":`Tab. 9 (${g.ar.n})`};P.f.v=g.ar.kva*P.f.fd;
+  const rank=(u,fn)=>[...u].sort((x,y)=>y-x).reduce((s,v,i)=>s+v*fn(i),0);
+  P.g={fd:null,v:rank(g.motor.units,fdT10),crit:"Tab. 10 (1º 100%, 2º 90%, 3º–5º 80%, demais 70%)"};
+  P.h={fd:null,v:rank(g.especial.units,fdT11),crit:"Tab. 11 (solda a arco: 100/70/40/30%)"};
+  P.i={fd:null,v:rank(g.hidro.units,fdT10),crit:"Tab. 10"};
+  P.j={fd:1,v:g.outros.kva,crit:"FD 1 (inclui recarga de VE, item 6.21)"};
+  const D=Object.values(P).reduce((s,x)=>s+x.v,0);
+  const corrente=f=>f===1?D*1000/Vfn:f===2?D*1000/Vff:D*1000/(Math.sqrt(3)*Vff);
+  const msgs=[];let row=null,IB=0;
+  if(CI>75)msgs.push(["bad",`Carga instalada de ${fmt(CI)} kW acima de 75 kW: o atendimento passa, em regra, para média tensão. Consulte a concessionária.`]);
+  if(conc==="cpfl"){
+    const T=CPFL[tensao];const limBi=tensao==="220/380"?25:25;
+    if(CI<=limBi&&!p.trifasico){row=T.find(r=>r.sel==="ci"&&CI<=r.max)}
+    if(!row){const tri=T.filter(r=>r.sel==="d");row=tri.find(r=>D<=r.max);
+      if(!row){row=tri[tri.length-1];msgs.push(["bad",`Demanda de ${fmt(D)} kVA acima da maior categoria trifásica (${row.cat}, até ${row.max} kVA). Consulte a CPFL.`])}}
+    IB=corrente(row.f);
+    if(row.sel==="ci"&&IB>row.disj)msgs.push(["warn",`A corrente de demanda (${fmt(IB,1)} A) passa do disjuntor da categoria ${row.cat} (${row.disj} A). Verifique o quadro de cargas ou avalie a categoria superior.`]);
+    if(row.med==="Indireta")msgs.push(["warn",`Categoria ${row.cat}: medição indireta e Documento de Responsabilidade Técnica obrigatório (demanda acima de ${tensao==="220/380"?66:38} kVA).`]);
+    if(CI>25&&!p.trifasico)msgs.push(["info","Carga instalada acima de 25 kW: categoria trifásica escolhida pela demanda (GED 13, item 6.22.1)."]);
+  }else{
+    let tipo=p.trifasico?"C":CI<=ENEL_TIPO.A.ciMax?"A":CI<=ENEL_TIPO.B.ciMax?"B":"C";
+    let elevado=false;
+    for(const t of ["A","B","C"].slice(["A","B","C"].indexOf(tipo))){IB=corrente(ENEL_TIPO[t].f);const op=ENEL.filter(r=>r.cat[0]===t).find(r=>r.disj>=IB);if(op){row=op;if(t!==tipo)elevado=true;break}}
+    if(!row){row=ENEL[ENEL.length-1];IB=corrente(3);msgs.push(["bad",`Corrente de demanda de ${fmt(IB,1)} A acima de 300 A. Consulte a Enel.`])}
+    if(elevado)msgs.push(["warn","A corrente de demanda excede os disjuntores do tipo definido pela carga instalada; o atendimento foi elevado para o tipo seguinte. Confirme com a Enel."]);
+    if(row.consulta)msgs.push(["warn",`Tipo ${row.cat}: sujeito a consulta de disponibilidade e viabilidade técnica (Anexo B, nota 10).`]);
+    if(row.med==="Indireta")msgs.push(["warn",`Tipo ${row.cat}: medição indireta (corrente de demanda acima de 100 A).`]);
+    if(tensao!==p.tensao)msgs.push(["warn","A Enel SP atende rede aérea em 127/220 V; a tensão foi ajustada."]);
+  }
+  // condutores: seção da tabela é a mínima; aumenta se a queda de tensão passar do limite
+  const fases=row.f,L=(+p.distRamal||0)+(+p.distAlim||0),rho=cfg.rho||0.0178;
+  const dv=s=>fases===1?200*rho*L*IB/(s*Vfn):fases===2?200*rho*L*IB/(s*Vff):100*Math.sqrt(3)*rho*L*IB/(s*Vff);
+  let S0=row.cu,Sx=S0;
+  if(dv(Sx)>cfg.dvMax){const s=SECOES.find(x=>x>=S0&&dv(x)<=cfg.dvMax);Sx=s||240;msgs.push(["warn",`Seção aumentada de ${mm(S0)} para ${mm(Sx)} para manter a queda de tensão em até ${fmt(cfg.dvMax,1)} %. Confira o eletroduto.`])}
+  const SN=fases<3||Sx<=25?Sx:({35:25,50:25,70:35,95:50,120:70,150:70,185:95,240:120})[Sx];
+  const SPE=Sx<=16?Sx:Sx<=35?16:SECOES.find(x=>x>=Sx/2);
+  const tipoF=["","Monofásico (F+N)","Bifásico (2F+N)","Trifásico (3F+N)"][fases];
+  const icc=conc==="enel"?(row.disj<=63?(Vfn===127?"10 kA":"5 kA"):row.disj<=100?"> 10 kA":"> 12 kA"):"conforme GED 13";
+  const dps=conc==="cpfl"?`classe II, In ≥ 5 kA, Imáx ≥ 12 kA, ${Vfn===127?"175 V":"275 V"}, Up ≤ 1,5 kV, com proteção interna e indicador de estado; fora do compartimento do medidor (GED 13, 6.12.2)`
+     :`classe II junto ao ponto de entrada da linha (NBR 5410, 6.3.5.2), ${Vfn===127?"175 V":"275 V"}, com indicador de estado (ET 0017, 7.17.1)`;
+  return{conc,tensao,Vfn,Vff,CI,g,P,D,fases,tipoF,row,cat:row.cat,disj:row.disj,IB,S:Sx,Snorma:S0,SN,SPE,Sat:row.at,
+    elet:row.elet,dvPct:dv(Sx),L,dvMax:cfg.dvMax,msgs,icc,dps,iz:AMP_B1[Sx]?AMP_B1[Sx][fases===3?1:0]:null}
+}
+
+/* ===================== Edifícios de uso coletivo – CPFL GED-119 ===================== */
+const GED119_REF="CPFL GED 119 – Fornecimento de Energia Elétrica a Edifícios de Uso Coletivo, versão 18.0, publicada em 30/11/2023";
+// Tabela 2 – fatores de demanda (%) por nº total de aparelhos: [até N, chuveiro, lava-louças, aquec. central, fogão/micro-ondas, secadora/sauna/xerox, hidromassagem]
+const G119_T2=[[1,100,100,100,100,100,100],[2,68,72,71,60,100,56],[3,56,62,64,48,100,47],[4,48,57,60,40,100,39],[5,43,54,57,37,80,35],[6,39,52,54,35,70,25],[7,36,50,53,33,62,25],[8,33,49,51,32,60,25],[9,31,48,50,31,54,25],[11,30,46,50,30,50,25],[15,29,44,50,28,46,20],[20,28,42,47,26,40,20],[25,27,40,46,26,36,18],[35,26,38,45,25,32,18],[40,26,36,45,25,26,15],[45,25,35,45,24,25,15],[55,25,34,45,24,25,15],[65,24,33,45,24,25,15],[75,24,32,45,24,25,15],[80,24,31,45,23,25,15],[90,23,31,45,23,25,15],[100,23,30,45,23,25,15],[120,22,29,45,23,25,15],[150,22,29,45,23,25,15],[200,21,28,45,23,25,15],[250,21,27,45,23,25,15],[350,20,26,45,23,25,15],[450,20,25,45,23,25,15],[800,20,24,45,23,25,15],[Infinity,20,23,45,23,25,15]];
+const G119_T6=[[10,100,100],[20,90,86],[30,82,80],[40,80,78],[50,77,75],[75,75,73],[Infinity,75,70]]; // [até N, comercial, residencial]
+const G119_T7=[[1,1],[3,.98],[6,.97],[9,.96],[12,.95],[15,.91],[18,.89],[21,.87],[24,.84],[27,.81],[30,.79],[33,.77],[36,.76],[39,.75],[42,.74],[45,.73],[48,.72],[51,.71],[54,.70],[57,.69],[63,.68],[69,.67],[78,.66],[87,.65],[96,.64],[102,.63],[105,.62],[108,.61],[111,.60],[114,.59],[117,.58],[120,.57],[126,.56],[129,.55],[132,.54],[138,.53],[141,.52],[147,.51],[Infinity,.50]];
+// Tabelas 4 (trifásico) e 5 (monofásico): cv -> [kW, kVA]
+const G119_T4={"1/3":[.39,.65],"1/2":[.58,.87],"3/4":[.83,1.26],"1":[1.05,1.52],"1 1/2":[1.54,2.17],"2":[1.95,2.70],"3":[2.95,4.04],"4":[3.72,5.03],"5":[4.51,6.02],"7 1/2":[6.57,8.65],"10":[8.89,11.54],"12 1/2":[10.85,14.09],"15":[12.82,16.65],"20":[17.01,22.10],"25":[20.92,25.83],"30":[25.03,30.52],"40":[33.38,39.74],"50":[40.93,48.73],"60":[49.42,58.15],"75":[61.44,72.28],"100":[81.23,95.56],"125":[100.67,117.05],"150":[120.09,141.29],"200":[161.65,190.18]};
+const G119_T5={"1/4":[.42,.66],"1/3":[.51,.77],"1/2":[.79,1.18],"3/4":[.90,1.34],"1":[1.14,1.56],"1 1/2":[1.67,2.35],"2":[2.17,2.97],"3":[3.22,4.07],"5":[5.11,6.16],"7 1/2":[7.07,8.84],"10":[9.31,11.64],"12 1/2":[11.58,14.94],"15":[13.72,16.94]};
+// Tabela 1 – FD iluminação e tomadas (comercial / industrial): [nome, faixa kW, FD até a faixa, FD excedente]
+const G119_T1=[["Bancos, lojas e semelhantes",Infinity,.75,.75],["Escritórios",20,1,.70],["Escolas e semelhantes",12,1,.50],["Hospitais e semelhantes",50,.40,.20],["Auditórios, salões de exposição",Infinity,1,1],["Barbearias, salões de beleza",Infinity,1,1],["Clubes",Infinity,1,1],["Garagens comerciais",Infinity,1,1],["Igrejas",Infinity,1,1],["Indústrias",Infinity,1,1],["Restaurantes",Infinity,1,1]];
+// Tabela 11 – ampacidade (A), 3 condutores carregados: método (2) PVC em eletroduto aparente/embutido em alvenaria; método (3) EPR/XLPE 0,6/1 kV enterrado
+const G119_T11={10:[50,61],16:[68,79],25:[89,101],35:[110,122],50:[134,144],70:[171,178],95:[207,211],120:[239,240],150:[275,271],185:[314,304],240:[370,351]};
+/* Enel – ET 0018 Conexão Coletiva, versão 2 (08/09/2025) */
+const ET0018_REF="Enel Especificação Técnica nº 0018 (GRI-EDBR-CNC-GRI-0018 / CNC-NDBR-DBR-25-1580-EDBR) – Fornecimento de Energia Elétrica em Tensão Secundária de Distribuição até 1 kV – Conexão Coletiva, versão 2 de 08/09/2025";
+// Tabela 17 – ramais de conexão aéreos, 220 V (Enel RJ/SP)
+const ET0018_T17=[[30,"3x35+1x35 mm² (1 circuito)"],[75,"2x35+1x35 mm² (1 circuito)"],[150,"3x70+70 mm² × 2 circuitos ou 3x35+1x35 mm² × 3 circuitos"],[225,"3x120+70 mm² × 2 circuitos ou 3x70+70 mm² × 3 circuitos"],[300,"3x120+70 mm² × 3 circuitos ou 3x70+70 mm² × 4 circuitos"]];
+// Tabela 23 – capacidade de condução de barra de cobre (1 barra): [largura × espessura mm, pintada A, nua A]
+const ET0018_T23=[["15 × 3",187,162],["20 × 3",237,204],["25 × 3",287,245],["20 × 5",319,274],["30 × 3",337,285],["25 × 5",384,327],["40 × 3",435,366],["30 × 5",447,379],["20 × 10",497,427],["40 × 5",573,482],["30 × 10",676,573],["40 × 10",850,715]];
+// Tabela 12 – ramal de conexão subterrâneo até 1000 A: [até A, caixa de passagem, barramento múltiplo, circuitos × seção]
+const ET0018_T12=[[100,"tipo II","1 × (3 vias)","1 × 35 mm²"],[160,"tipo III","1 × (3 vias)","1 × 95 mm²"],[277,"tipo III","1 × (3 vias)","1 × 185 mm²"],[527,"tipo III","2 × (3 vias)","2 × 185 mm²"],[750,"2 × tipo III","3 × (3 vias)","3 × 185 mm²"],[1000,"2 × tipo III","3 × (3 vias)","4 × 185 mm²"]];
+const G119_DISJ=[100,125,150,160,175,200,225,250,300,350,400,450,500,600];
+const G119_T12=[[200,"25,4 × 6,4 mm (1\" × 1/4\")"],[445,"31,8 × 6,4 mm (1.1/4\" × 1/4\")"],[535,"38,1 × 6,4 mm (1.1/2\" × 1/4\")"],[700,"50,8 × 6,4 mm (2\" × 1/4\")"],[875,"38,1 × 12,7 mm (1.1/2\" × 1/2\")"],[1135,"50,8 × 12,7 mm (2\" × 1/2\")"],[1510,"63,5 × 12,7 mm (2.1/2\" × 1/2\")"],[1690,"88,9 × 12,7 mm (3\" × 1/2\")"],[2180,"101,6 × 12,7 mm (4\" × 1/2\")"],[2670,"127 × 12,7 mm (5\" × 1/2\")"]];
+const G119_T10=[[33,"30"],[49,"45"],[82,"75"],[124,"112,5"],[165,"150"],[250,"225"],[308,"300"]];
+const ED_TIPOS={
+ ilum:{n:"Iluminação e tomadas",col:null,map:"ilum"},
+ chuveiro:{n:"Chuveiro, torneira, aquec. de passagem, ferro",col:1,map:"aquec"},
+ lavalouca:{n:"Lava-louças",col:2,map:"cozinha"},
+ aqcentral:{n:"Aquecedor central (acumulação ou passagem)",col:3,map:"boiler"},
+ fogao:{n:"Fogão elétrico / forno micro-ondas",col:4,map:"fogao"},
+ secadora:{n:"Secadora de roupa, sauna, xerox",col:5,map:"cozinha"},
+ hidro:{n:"Hidromassagem",col:6,map:"hidro"},
+ ar:{n:"Ar-condicionado tipo janela",col:"ar",map:"ar"},
+ especial:{n:"Equipamento especial (solda, raios X…)",col:"esp",map:"especial"},
+ outros:{n:"Outros / forno elétrico / recarga VE (100%)",col:"out",map:"outros"}};
+// Tabela 3 – potências mínimas, identificadas pela descrição da carga
+const ED_MIN=[[/chuveiro/i,6500,"chuveiro"],[/torneira/i,3000,"torneira elétrica"],[/lava.?lou/i,2000,"lava-louças"],[/secadora|secar/i,2500,"secadora de roupa"],[/micro.?ondas/i,1500,"forno micro-ondas"],[/forno el/i,1500,"forno elétrico"],[/ferro/i,1000,"ferro elétrico"]];
+const ED_PRESETS=[["Iluminação","ilum",1,600,1],["Tomadas (3 × 600 W cozinha + 100 W demais)","ilum",1,2600,1],["Chuveiro elétrico 6.500 W","chuveiro",1,6500,1],["Torneira elétrica 3.000 W","chuveiro",1,3000,1],
+ ["Lava-louças 2.000 W","lavalouca",1,2000,1],["Secadora de roupa 2.500 W","secadora",1,2500,1],["Forno micro-ondas 1.500 W","fogao",1,1500,1],["Fogão elétrico / cooktop 6.000 W","fogao",1,6000,1],
+ ["Forno elétrico 1.500 W","outros",1,1500,1],["Boiler 3.000 W","aqcentral",1,3000,1],["Hidromassagem 1.500 W","hidro",1,1500,1],["Ar-condicionado 12.000 BTU/h (1.600 W)","ar",1,1600,.84],["Carregador veicular 7,4 kW","outros",1,7400,1]];
+function novoEd(){return{uso:"Residencial",areaAdm:0,metodo:0,atividade:0,
+  grupos:[{nome:"Apartamento tipo",qtd:10,area:60,res:true,cargas:[{d:"Iluminação",t:"ilum",q:1,p:600,fp:1},{d:"Tomadas",t:"ilum",q:1,p:2600,fp:1},{d:"Chuveiro elétrico 6.500 W",t:"chuveiro",q:1,p:6500,fp:1}]}],
+  adm:{cargas:[{d:"Iluminação de áreas comuns",t:"ilum",q:1,p:2000,fp:1}],motores:[{d:"Bomba de recalque",cv:"3",f:3,q:2}]}}}
+function exemploEdificio(){const p=novoProjeto({tipo:"coletivo",nome:"EXEMPLO – Edifício residencial (GED-119, ex. 2)",cliente:"Condomínio Exemplo",endereco:"Av. Exemplo, 500",municipio:"Campinas",conc:"cpfl",distRamal:20,
+  ed:{uso:"Residencial",areaAdm:2884,metodo:0,atividade:0,
+   grupos:[{nome:"Apartamento tipo",qtd:20,area:160,res:true,cargas:[{d:"Iluminação",t:"ilum",q:1,p:3130,fp:1},{d:"Tomadas",t:"ilum",q:1,p:1800,fp:1},{d:"Chuveiro elétrico 6.500 W",t:"chuveiro",q:1,p:6500,fp:1},{d:"Lava-louças",t:"lavalouca",q:1,p:2500,fp:1},{d:"Secadora de roupa",t:"secadora",q:1,p:2500,fp:1}]}],
+   adm:{cargas:[{d:"Chuveiros (vestiários)",t:"chuveiro",q:5,p:6500,fp:1},{d:"Torneiras elétricas",t:"chuveiro",q:2,p:3000,fp:1}],
+    motores:[{d:"Portão elétrico",cv:"1",f:3,q:1},{d:"Bomba d'água",cv:"10",f:3,q:1},{d:"Bomba de piscina",cv:"5",f:3,q:1},{d:"Elevadores",cv:"10",f:3,q:2},{d:"Elevador",cv:"7 1/2",f:3,q:1}]}}});
+  return p}
+// Exemplos Enel SP
+function exemploCasaEnel(){return novoProjeto({nome:"EXEMPLO Enel – Sobrado residencial",cliente:"Cliente Exemplo",endereco:"Rua dos Ipês, 85",municipio:"São Paulo",conc:"enel",tensao:"127/220",distRamal:12,distAlim:15,
+  cargas:[{d:"Iluminação (total)",t:"ilum",q:1,p:1200,fp:1},{d:"Tomadas de uso geral (total)",t:"ilum",q:1,p:4200,fp:1},
+  {d:"Chuveiro elétrico 7.500 W",t:"aquec",q:2,p:7500,fp:1},{d:"Forno elétrico 2.000 W",t:"cozinha",q:1,p:2000,fp:1},{d:"Micro-ondas 1.300 W",t:"cozinha",q:1,p:1300,fp:1},
+  {d:"Ar-condicionado 12.000 BTU/h (1.600 W)",t:"ar",q:3,p:1600,fp:.84},{d:"Motor monofásico 1/2 cv",t:"motor",q:1,p:510,fp:.66},
+  {d:"Carregador veicular 7,4 kW",t:"outros",q:1,p:7400,fp:1}]})}
+function exemploEdificioEnel(){return novoProjeto({tipo:"coletivo",nome:"EXEMPLO Enel – Edifício residencial 24 apartamentos",cliente:"Condomínio Exemplo",endereco:"Rua Exemplo, 300",municipio:"São Paulo",conc:"enel",tensao:"127/220",distRamal:25,
+  ed:{uso:"Residencial",areaAdm:900,metodo:0,atividade:0,barraPintada:0,
+   grupos:[{nome:"Apartamento tipo (2 dormitórios)",qtd:24,area:65,res:true,cargas:[{d:"Iluminação",t:"ilum",q:1,p:700,fp:1},{d:"Tomadas",t:"ilum",q:1,p:2600,fp:1},{d:"Chuveiro elétrico 6.500 W",t:"chuveiro",q:1,p:6500,fp:1},{d:"Forno micro-ondas 1.500 W",t:"fogao",q:1,p:1500,fp:1}]}],
+   adm:{cargas:[{d:"Iluminação de áreas comuns",t:"ilum",q:1,p:3000,fp:1},{d:"Chuveiros (vestiário)",t:"chuveiro",q:2,p:6500,fp:1}],
+    motores:[{d:"Elevador",cv:"10",f:3,q:1},{d:"Bombas de recalque",cv:"3",f:3,q:2},{d:"Portão",cv:"1/2",f:3,q:1}]}}})}
+function abrirExemplo(k){const n=k==="casa-enel"?exemploCasaEnel():k==="ed-enel"?exemploEdificioEnel():k==="ed-cpfl"?exemploEdificio():exemplo();S.projects.push(n);S.cur=n.id;S.tab="dim";S.confirmDel=false;persist(n);render();toast("Exemplo aberto: "+n.nome.replace("EXEMPLO ",""))}
+const lookup=(T,n)=>T.find(r=>n<=r[0]);
+function fdT1(kw,idx){const a=G119_T1[idx]||G119_T1[0];return kw<=a[1]?kw*a[2]:a[1]*a[2]+(kw-a[1])*a[3]}
+function motorKVA(m){const T=+m.f===1?G119_T5:G119_T4;const v=T[m.cv]||[0,0];return v}
+function calcColetivo(p,cfg){
+  const ed=p.ed||novoEd();const enel=p.conc==="enel";const tensao=!enel&&p.tensao==="220/380"?"220/380":"127/220";const [Vfn,Vff]=tensao==="220/380"?[220,380]:[127,220];
+  const res=ed.uso==="Residencial";const msgs=[];
+  const isRes=g=>ed.uso==="Residencial"||(ed.uso==="Misto"&&g.res);
+  const nAptos=ed.grupos.reduce((s,g)=>s+Math.max(0,Math.round(+g.qtd||0)),0);
+  // contagens por coluna da Tabela 2 (prédio inteiro)
+  const cnt={};const add=(k,n)=>cnt[k]=(cnt[k]||0)+n;
+  const each=(fn)=>{ed.grupos.forEach((g,gi)=>{const Q=Math.max(0,Math.round(+g.qtd||0));(g.cargas||[]).forEach(c=>fn(c,Q,"apt",gi))});(ed.adm.cargas||[]).forEach(c=>fn(c,1,"adm",-1))};
+  each((c,Q)=>{const t=ED_TIPOS[c.t]?c.t:"outros";add(t,Q*Math.max(0,Math.round(+c.q||0)))});
+  const fdOf=t=>{const col=ED_TIPOS[t].col;const n=cnt[t]||0;if(typeof col==="number")return lookup(G119_T2,Math.max(n,1))[col]/100;if(col==="ar")return lookup(G119_T6,Math.max(n,1))[res?2:1]/100;return 1};
+  // D1 – iluminação e tomadas
+  const D1={apt:0,adm:0};const CIg=[];
+  ed.grupos.forEach(g=>{const Q=Math.max(0,Math.round(+g.qtd||0));const ilumW=(g.cargas||[]).filter(c=>c.t==="ilum").reduce((s,c)=>s+(+c.q||0)*(+c.p||0),0);
+    if(isRes(g))D1.apt+=Q*(+g.area||0)*5/1000;else D1.apt+=fdT1(Q*ilumW/1000,+ed.atividade||0)});
+  const admIlumKW=(ed.adm.cargas||[]).filter(c=>c.t==="ilum").reduce((s,c)=>s+(+c.q||0)*(+c.p||0),0)/1000;
+  D1.adm=res?(+ed.areaAdm||0)*5/1000:fdT1(admIlumKW,+ed.atividade||0);
+  // D2 – aparelhos
+  const D2={apt:0,adm:0};const D2col={};const esp=[];
+  each((c,Q,side)=>{const t=ED_TIPOS[c.t]?c.t:"outros";if(t==="ilum")return;const q=Math.max(0,Math.round(+c.q||0)),w=Math.max(0,+c.p||0),fp=Math.min(1,Math.max(.1,+c.fp||1));
+    if(t==="especial"){for(let i=0;i<Q*q;i++)esp.push([w/1000/fp,side]);return}
+    const v=Q*q*w/1000/fp*fdOf(t);D2[side]+=v;D2col[t]=(D2col[t]||0)+v});
+  esp.sort((a,b)=>b[0]-a[0]).forEach(([v,side],i)=>{const x=v*(i===0?1:.6);D2[side]+=x;D2col.especial=(D2col.especial||0)+x});
+  // D3 – motores (administração)
+  const mots=[];(ed.adm.motores||[]).forEach(m=>{const q=Math.max(0,Math.round(+m.q||0));const v=motorKVA(m);for(let i=0;i<q;i++)mots.push(v[1])});
+  mots.sort((a,b)=>b-a);const motTot=mots.reduce((s,v)=>s+v,0);const D3=mots.length?mots[0]+(motTot-mots[0])*.5:0;
+  const coef=res?lookup(G119_T7,Math.max(nAptos,1))[1]:1;
+  const Dapt=(D1.apt+D2.apt)*coef,Dadm=D1.adm+D2.adm+D3,Dg=Dapt+Dadm;
+  // carga instalada e categoria por tipo de unidade (GED 13)
+  const unidades=ed.grupos.map(g=>{const cargas=(g.cargas||[]).map(c=>({d:c.d,t:(ED_TIPOS[c.t]||ED_TIPOS.outros).map,q:c.q,p:c.p,fp:c.fp}));
+    const r=calc(novoProjeto({conc:enel?"enel":"cpfl",tensao,uso:isRes(g)?"Residencial":"Comercial",cargas}),cfg);return{nome:g.nome,qtd:Math.max(0,Math.round(+g.qtd||0)),CI:r.CI,D:r.D,IB:r.IB,cat:r.cat,disj:r.disj,fases:r.fases,S:r.S,row:r.row}});
+  const admCargas=(ed.adm.cargas||[]).map(c=>({d:c.d,t:(ED_TIPOS[c.t]||ED_TIPOS.outros).map,q:c.q,p:c.p,fp:c.fp})).concat((ed.adm.motores||[]).map(m=>{const v=motorKVA(m);return{d:m.d,t:"motor",q:m.q,p:v[0]*1000,fp:v[1]?v[0]/v[1]:1}}));
+  const admR=admCargas.length?calc(novoProjeto({conc:enel?"enel":"cpfl",tensao,uso:res?"Residencial":"Comercial",cargas:admCargas,trifasico:(ed.adm.motores||[]).some(m=>+m.f===3&&+m.q>0)}),cfg):null;
+  const CItot=unidades.reduce((s,u)=>s+u.CI*u.qtd,0)+(admR?admR.CI:0);
+  // entrada geral
+  const I=Dg*1000/(Math.sqrt(3)*Vff);
+  if(enel)return calcColetivoEnel({p,cfg,ed,res,coef,nAptos,cnt,fdOf,D1,D2,D2col,D3,mots,motTot,Dapt,Dadm,Dg,unidades,admR,CItot,I,Vfn,Vff,tensao,msgs,isRes});
+  const lim=res?[200,400]:[112.5,225,300];
+  let atend;
+  if(res){atend=Dg<=200?"Um ramal de conexão aéreo a partir da rede secundária (6.3.1 a)":Dg<=400?"Dois ramais de conexão aéreos em paralelo ou ramal de entrada subterrâneo a partir de poste da CPFL (6.3.1 b)":"Ramal de conexão subterrâneo em tensão primária, com posto de transformação (6.3.1 c)"}
+  else{atend=Dg<=112.5?"Um ramal de conexão aéreo a partir da rede secundária (6.3.1 d)":Dg<=225?"Dois ramais aéreos em paralelo ou ramal de entrada subterrâneo a partir de poste da CPFL (6.3.1 e)":Dg<=300?"Ramal de entrada subterrâneo a partir de poste da CPFL (6.3.1 f)":"Ramal de conexão subterrâneo em tensão primária, com posto de transformação (6.3.1 g)"}
+  const mt=Dg>(res?400:300);
+  if(mt)msgs.push(["bad",`Demanda geral de ${fmt(Dg)} kVA: atendimento em tensão primária com posto de transformação (GED-119, 6.3.3). O dimensionamento do ramal secundário abaixo é só referência.`]);
+  if(nAptos+1<=12&&Dg<=76)msgs.push(["info","Até 12 unidades e demanda até 76 kVA: a GED-119 (3.8, nota) permite usar o documento CPFL nº 4621 para este caso."]);
+  unidades.forEach(u=>{if(u.CI>75)msgs.push(["bad",`${u.nome}: carga instalada acima de 75 kW por unidade exige atendimento em média tensão (6.3.1 h).`])});
+  each((c,Q,side,gi)=>{const m=ED_MIN.find(x=>x[0].test(c.d||""));if(m&&+c.p>0&&+c.p<m[1])msgs.push(["warn",`${side==="adm"?"Administração":ed.grupos[gi].nome}: ${m[2]} com ${fmt(+c.p,0)} W, abaixo do mínimo de ${fmt(m[1],0)} W da Tabela 3 (o mínimo prevalece para a norma).`])});
+  const disj=G119_DISJ.find(x=>x>=I)||null;if(!disj)msgs.push(["bad",`Corrente de ${fmt(I,0)} A acima do maior disjuntor da Tabela 12 (600 A).`]);
+  const metodo=+ed.metodo||0;const L=+p.distRamal||0,rho=cfg.rho||0.0178;
+  let cab=null;
+  for(const n of [1,2,3,4]){for(const s of Object.keys(G119_T11).map(Number)){if(s>185||(n>1&&s<=70))continue;const Iz=G119_T11[s][metodo]*n;const dv=100*Math.sqrt(3)*rho*L*I/(s*n*Vff);
+    if(Iz>=(disj||I)&&dv<=3){cab={n,s,Iz,dv};break}}if(cab)break}
+  if(!cab)msgs.push(["bad","Nenhuma combinação até 4 circuitos de 185 mm² atende à corrente e à queda de tensão de 3%. Revise a distância ou o atendimento."]);
+  const barr=(lookup(G119_T12,I)||[0,"acima da Tabela 12"])[1];
+  const poste=Dg<=(tensao==="220/380"?82:76)?"conforme GED 13, Tabela 1 (categoria pela demanda)":tensao==="220/380"?(Dg<=150?"300 daN (concreto ou coluna moldada)":"500 daN (concreto ou coluna moldada)"):(Dg<=150?"400 daN (concreto ou coluna moldada)":"700 daN (concreto ou coluna moldada)");
+  const trafo=(lookup(G119_T10,Math.ceil(Dg))||[0,"medição em média tensão (acima de 308 kVA)"])[1];
+  const L3=cab?cab.dv:null;
+  return{coletivo:true,conc:"cpfl",tensao,Vfn,Vff,res,coef,nAptos,cnt,fdOf,D1,D2,D2col,D3,mots,motTot,Dapt,Dadm,Dg,unidades,admR,CItot,I,disj,cab,barr,poste,trafo,atend,mt,msgs,metodo,L}
+}
+function calcColetivoEnel(o){const {p,cfg,ed,Dg,I,Vff,unidades,msgs,isRes}=o;
+  const nRes=ed.grupos.reduce((s,g)=>s+(isRes(g)?Math.max(0,Math.round(+g.qtd||0)):0),0);
+  const habit=ed.uso==="Residencial"||(ed.uso==="Misto"&&nRes>=o.nAptos/2);
+  const dvMax=habit?2:1;
+  // sem condutores em paralelo num mesmo disjuntor (7.19.6 l): se não couber em um cabo de até 240 mm², divide em ramais de entrada, cada um com sua proteção
+  const metodo=+ed.metodo||0,L=+p.distRamal||0,rho=cfg.rho||0.0178;const DJ=[50,63,80,100,125,160,175,200,225,250,300,350,400];
+  let cab=null,disj=null;
+  for(const n of [1,2,3,4]){const In=I/n;const dj=DJ.find(x=>x>=In);if(!dj)continue;
+    for(const s of Object.keys(G119_T11).map(Number)){const Iz=G119_T11[s][metodo];const dv=100*Math.sqrt(3)*rho*L*In/(s*Vff);if(Iz>=dj&&dv<=dvMax){cab={n,s,Iz,dv,In};disj=dj;break}}if(cab)break}
+  if(!cab)msgs.push(["bad",`Nenhuma combinação de até 4 ramais de entrada com cabos de até 240 mm² atende a ${fmt(I,0)} A com queda de tensão ≤ ${dvMax}%. Consulte a Enel.`]);
+  else if(cab.n>1)msgs.push(["warn",`Corrente de ${fmt(I,0)} A não cabe em um único cabo de até 240 mm² protegido por um disjuntor (sem paralelo, 7.19.6 l): entrada dividida em ${cab.n} ramais de entrada, cada um com proteção geral própria e atendendo parte das medições. A resistência do poste com 2 ou mais ramais é informada pela Enel (Tabela 18, nota 4).`]);
+  let conexao,trafo=null,ramalAereo=null;
+  if(Dg<=300){trafo=ET0018_T17.find(r=>Dg<=r[0]);conexao="Ramal de conexão a partir de transformador em poste da Enel na via pública (ET 0018, 7.11.1; Tabela 9: até 300 kVA)";ramalAereo=trafo[1]}
+  else conexao=Dg<=630?"Centro de transformação de superfície compacto – CTSC, até 630 kVA (7.11.3)":Dg<=1000?"Transformador pedestal até 1.000 kVA (7.11.5) ou CTSC/CTS":Dg<=2000?"Centro de transformação de superfície – CTS, até 2.000 kVA (7.11.6)":Dg<=4000?"Câmara transformadora, até 4.000 kVA (7.11.4 / 7.11.7)":"Acima de 4.000 kVA: consulta à Enel";
+  if(Dg>300)msgs.push(["warn",`Demanda geral de ${fmt(Dg)} kVA acima de 300 kVA: atendimento por posto de transformação (Tabela 9), sujeito a consulta de viabilidade técnica.`]);
+  const sub=ET0018_T12.find(r=>I<=r[0]);
+  const poste=!cab?"—":cab.n>1?"informado pela Enel (2 ou mais ramais de entrada)":cab.s<=16?"100 daN":cab.s<=95?"200 daN":cab.s<=185?"300 daN":"concreto moldado no local, acima de 300 daN";
+  unidades.forEach(u=>{if(u.CI>75)msgs.push(["bad",`${u.nome}: carga instalada acima de 75 kW por unidade é atendida em média tensão (ET 0018, 7.8.2).`]);if(u.IB>100)msgs.push(["warn",`${u.nome}: corrente de demanda de ${fmt(u.IB,0)} A acima de 100 A exige medição indireta para a unidade.`])});
+  // barramento da caixa de barramentos (7.19.4, Tabela 23): por ramal de entrada, pela corrente do disjuntor (cobre a redução de área da furação)
+  const Ibar=disj||(cab?cab.In:I);const pint=+ed.barraPintada===1;
+  const bar=ET0018_T23.filter(b=>(pint?b[1]:b[2])>=Ibar).sort((a,b)=>(pint?a[1]-b[1]:a[2]-b[2]))[0]||null;
+  const nMed=o.nAptos+(o.admR?1:0);
+  const barr=bar?`barra de cobre ${bar[0]} mm ${pint?"pintada":"nua"} – ${pint?bar[1]:bar[2]} A ≥ ${fmt(Ibar,0)} A por fase e neutro${cab&&cab.n>1?`, um barramento para cada um dos ${cab.n} ramais de entrada`:""} (Tabela 23)`:`acima de 1 barra 40 × 10 mm (${pint?850:715} A): dividir em mais caixas de barramento ou consultar a Enel`;
+  if(!bar)msgs.push(["warn",`Corrente de ${fmt(Ibar,0)} A acima da maior barra da Tabela 23. Divida o centro de medição.`]);
+  const caixaBarr=nMed>4?"obrigatória (mais de 4 medições, 7.19.4)":"obrigatória se houver mais de uma caixa de medição coletiva (7.19.4)";
+  msgs.push(["info","Enel SP: o tipo e a quantidade de condutores do ramal de entrada serão confirmados pela Enel por correspondência após a Solicitação de Atendimento Técnico (ET 0018, 7.11)."]);
+  return Object.assign({},o,{coletivo:true,conc:"enel",enel:true,disj,cab,dvMax,habit,atend:conexao,ramalAereo,trafo:trafo?trafo[0]:null,sub,poste,metodo,L,mt:Dg>300,barr,bar,Ibar,pint,caixaBarr})}
+function edPath(p,path){return path.split(".").reduce((o,k)=>o==null?o:o[k],p)}
+function edSet(p,path,v){const ks=path.split(".");const last=ks.pop();const o=ks.reduce((o,k)=>o[k],p);o[last]=v}
+function edLoadRows(base,cargas){return cargas.map((c,i)=>`<tr>
+  <td><input id="${base}.${i}.d" data-ep="${base}.${i}.d" value="${esc(c.d)}" aria-label="Descrição"></td>
+  <td><select id="${base}.${i}.t" data-ep="${base}.${i}.t" aria-label="Tipo">${Object.entries(ED_TIPOS).map(([k,v])=>`<option value="${k}"${c.t===k?" selected":""}>${esc(v.n)}</option>`).join("")}</select></td>
+  <td><input id="${base}.${i}.q" data-ep="${base}.${i}.q" type="number" min="0" step="1" value="${esc(c.q)}" style="width:64px" aria-label="Quantidade"></td>
+  <td><input id="${base}.${i}.p" data-ep="${base}.${i}.p" type="number" min="0" step="10" value="${esc(c.p)}" style="width:92px" aria-label="Potência W"></td>
+  <td><input id="${base}.${i}.fp" data-ep="${base}.${i}.fp" type="number" min="0.1" max="1" step="0.01" value="${esc(c.fp)}" style="width:70px" aria-label="FP"></td>
+  <td><button class="btn sm danger" data-act="ed-rm" data-path="${base}" data-i="${i}" aria-label="Remover">✕</button></td></tr>`).join("")}
+function edLoadTable(base,cargas){return`<div class="tw"><table><thead><tr><th>Descrição</th><th>Tipo (Tabela 2)</th><th>Qtd</th><th>W unit.</th><th>FP</th><th></th></tr></thead><tbody>${edLoadRows(base,cargas)||`<tr><td colspan="6" class="note">Sem cargas.</td></tr>`}</tbody></table></div>
+  <div class="row" style="margin-top:8px"><select data-preset="${base}" aria-label="Adicionar carga típica" style="max-width:320px"><option value="">Adicionar carga típica…</option>${ED_PRESETS.map((x,i)=>`<option value="${i}">${esc(x[0])}</option>`).join("")}</select><button class="btn sm" data-act="ed-add" data-path="${base}">+ Linha</button></div>`}
+function viewEdificio(p,r){const ed=p.ed;
+ const grupos=ed.grupos.map((g,gi)=>{const u=r.unidades[gi];return`<div class="card"><h3>${esc(g.nome||"Unidade")} <small>${u?`CI ${fmt(u.CI)} kW por unidade · categoria ${esc(u.cat)} ${u.disj} A`:""}</small></h3>
+  <div class="grid">
+   <label class="f">Nome do tipo de unidade<input id="ed.grupos.${gi}.nome" data-ep="ed.grupos.${gi}.nome" value="${esc(g.nome)}"></label>
+   <label class="f">Quantidade de unidades<input id="ed.grupos.${gi}.qtd" data-ep="ed.grupos.${gi}.qtd" type="number" min="0" step="1" value="${esc(g.qtd)}"></label>
+   <label class="f">Área útil por unidade (m²)<input id="ed.grupos.${gi}.area" data-ep="ed.grupos.${gi}.area" type="number" min="0" step="0.5" value="${esc(g.area)}"></label>
+   ${ed.uso==="Misto"?`<label class="chk" style="align-self:end"><input type="checkbox" id="ed.grupos.${gi}.res" data-ep="ed.grupos.${gi}.res" ${g.res?"checked":""}> Unidade residencial</label>`:""}
+  </div><div style="margin-top:12px">${edLoadTable(`ed.grupos.${gi}.cargas`,g.cargas||[])}</div>
+  ${ed.grupos.length>1?`<div class="row" style="margin-top:10px"><button class="btn sm danger" data-act="ed-rmgrupo" data-i="${gi}">Remover este tipo de unidade</button></div>`:""}</div>`}).join("");
+ const motRows=(ed.adm.motores||[]).map((m,i)=>{const T=+m.f===1?G119_T5:G119_T4;const v=motorKVA(m);return`<tr>
+  <td><input id="ed.adm.motores.${i}.d" data-ep="ed.adm.motores.${i}.d" value="${esc(m.d)}" aria-label="Descrição"></td>
+  <td><select id="ed.adm.motores.${i}.f" data-ep="ed.adm.motores.${i}.f" aria-label="Fases"><option value="3"${+m.f!==1?" selected":""}>Trifásico (Tab. 4)</option><option value="1"${+m.f===1?" selected":""}>Monofásico (Tab. 5)</option></select></td>
+  <td><select id="ed.adm.motores.${i}.cv" data-ep="ed.adm.motores.${i}.cv" aria-label="Potência cv">${Object.keys(T).map(k=>`<option${k===m.cv?" selected":""}>${k}</option>`).join("")}</select></td>
+  <td><input id="ed.adm.motores.${i}.q" data-ep="ed.adm.motores.${i}.q" type="number" min="0" step="1" value="${esc(m.q)}" style="width:64px" aria-label="Quantidade"></td>
+  <td class="n">${fmt(v[1])}</td><td><button class="btn sm danger" data-act="ed-rm" data-path="ed.adm.motores" data-i="${i}" aria-label="Remover">✕</button></td></tr>`}).join("");
+ return`${p.conc==="enel"?`<div class="alert ok">Enel SP: a ET 0018 deixa o método de demanda a cargo do responsável técnico (7.8.4). O app usa o método publicado da CPFL GED-119 (item 6.11) para a demanda e a ET 0018 para a conexão e a entrada.</div>`:""}
+ <div class="card"><h3>Edifício <small>demanda pelo método da GED-119, item 6.11</small></h3><div class="grid">
+  <label class="f">Uso do edifício<select id="ed.uso" data-ep="ed.uso">${["Residencial","Comercial","Misto"].map(o=>`<option${ed.uso===o?" selected":""}>${o}</option>`).join("")}</select></label>
+  <label class="f">Área útil da administração (m²)<input id="ed.areaAdm" data-ep="ed.areaAdm" type="number" min="0" step="1" value="${esc(ed.areaAdm)}"></label>
+  ${ed.uso!=="Residencial"?`<label class="f">Atividade (Tabela 1)<select id="ed.atividade" data-ep="ed.atividade">${G119_T1.map((a,i)=>`<option value="${i}"${+ed.atividade===i?" selected":""}>${esc(a[0])}</option>`).join("")}</select></label>`:""}
+  ${p.conc==="enel"?`<label class="f">Barras do barramento (ET 0018, Tabela 23)<select id="ed.barraPintada" data-ep="ed.barraPintada"><option value="0"${+ed.barraPintada!==1?" selected":""}>Barra de cobre nua</option><option value="1"${+ed.barraPintada===1?" selected":""}>Barra de cobre pintada</option></select></label>`:""}
+  <label class="f">Instalação do ramal de entrada (Tabela 11)<select id="ed.metodo" data-ep="ed.metodo"><option value="0"${+ed.metodo===0?" selected":""}>Cabo PVC 750 V em eletroduto aparente ou embutido em alvenaria</option><option value="1"${+ed.metodo===1?" selected":""}>Cabo EPR/XLPE 0,6/1 kV em duto enterrado (subterrâneo)</option></select></label>
+ </div><p class="note" style="margin-top:10px">${ed.uso==="Residencial"?"Residencial: a demanda de iluminação e tomadas da entrada é calculada pela área útil (5 W/m²) e o coeficiente de simultaneidade da Tabela 7 é aplicado às unidades.":"Comercial: iluminação e tomadas pela carga declarada e Tabela 1; sem coeficiente de simultaneidade."} Aparelhos abaixo de 1.000 W ficam incluídos nas tomadas.</p>
+ <div class="row" style="margin-top:10px"><button class="btn" data-act="ed-addgrupo">+ Tipo de unidade</button></div></div>
+ ${grupos}
+ <div class="card"><h3>Administração (áreas comuns) <small>${r.admR?`CI ${fmt(r.admR.CI)} kW · categoria ${esc(r.admR.cat)} ${r.admR.disj} A`:""}</small></h3>
+  ${edLoadTable("ed.adm.cargas",ed.adm.cargas||[])}
+  <h3 style="margin-top:16px;font-size:14px">Motores (elevadores, bombas, portões)</h3>
+  <div class="tw"><table><thead><tr><th>Descrição</th><th>Tipo</th><th>cv</th><th>Qtd</th><th class="n">kVA unit.</th><th></th></tr></thead><tbody>${motRows||`<tr><td colspan="6" class="note">Sem motores.</td></tr>`}</tbody></table></div>
+  <div class="row" style="margin-top:8px"><button class="btn sm" data-act="ed-addmotor">+ Motor</button></div></div>
+ ${viewDemandaCol(r)}`}
+function viewDemandaCol(r){const cols=Object.keys(ED_TIPOS).filter(k=>k!=="ilum"&&(r.cnt[k]||0)>0);
+ return`<div class="card"><h3>Demanda geral da entrada <small>GED-119, 6.11.3 a 6.11.8</small></h3>
+ <div class="tw"><table><thead><tr><th>Parcela</th><th>Critério</th><th class="n">Unidades (kVA)</th><th class="n">Administração (kVA)</th></tr></thead><tbody>
+  <tr><td>D1 – Iluminação e tomadas</td><td>${r.res?"área útil × 5 W/m², FP 1":"carga declarada × Tabela 1"}</td><td class="n">${fmt(r.D1.apt)}</td><td class="n">${fmt(r.D1.adm)}</td></tr>
+  ${cols.map(k=>`<tr><td>D2 – ${esc(ED_TIPOS[k].n)}</td><td>${typeof ED_TIPOS[k].col==="number"?`Tabela 2: ${r.cnt[k]} aparelhos → FD ${fmt(r.fdOf(k))}`:ED_TIPOS[k].col==="ar"?`Tabela 6: ${r.cnt[k]} aparelhos → FD ${fmt(r.fdOf(k))}`:ED_TIPOS[k].col==="esp"?"maior 100%, demais 60% (6.11.7)":"FD 1"}</td><td class="n" colspan="2">${fmt(r.D2col[k]||0)}</td></tr>`).join("")}
+  <tr><td>D2 – subtotal aparelhos</td><td></td><td class="n">${fmt(r.D2.apt)}</td><td class="n">${fmt(r.D2.adm)}</td></tr>
+  <tr><td>D3 – Motores</td><td>Tabelas 4/5: maior ${fmt(r.mots[0]||0)} kVA a 100%, demais ${fmt(r.motTot-(r.mots[0]||0))} kVA a 50%</td><td class="n">—</td><td class="n">${fmt(r.D3)}</td></tr>
+  <tr><td>Coeficiente de simultaneidade</td><td>${r.res?`Tabela 7: ${r.nAptos} unidades`:"não se aplica (não residencial)"}</td><td class="n">× ${fmt(r.coef)}</td><td class="n">—</td></tr>
+ </tbody><tfoot><tr><th>Demandas</th><th></th><th class="n">${fmt(r.Dapt)}</th><th class="n">${fmt(r.Dadm)}</th></tr>
+ <tr><th colspan="3">Demanda geral da entrada (Dg)</th><th class="n">${fmt(r.Dg)} kVA</th></tr></tfoot></table></div></div>`}
+function viewDimCol(p,r){return`${r.msgs.map(m=>`<div class="alert ${m[0]==="bad"?"bad":m[0]==="info"?"ok":""}">${esc(m[1])}</div>`).join("")}
+ <div class="card"><h3>Resultado <small>${esc(r.enel?ET0018_REF:GED119_REF)}</small></h3><div class="kpis">
+  <div class="kpi"><span>Unidades</span><b>${r.nAptos} + adm.</b></div>
+  <div class="kpi"><span>Carga instalada total</span><b>${fmt(r.CItot,1)} kW</b></div>
+  <div class="kpi"><span>Demanda geral</span><b>${fmt(r.Dg)} kVA</b></div>
+  <div class="kpi hi"><span>Corrente · disjuntor geral</span><b>${fmt(r.I,0)} A · ${r.enel&&r.cab&&r.cab.n>1?r.cab.n+" × ":""}${r.disj||"—"} A</b></div></div></div>
+ ${r.enel?`<div class="card"><h3>Entrada consumidora <small>ET 0018</small></h3><dl class="spec">
+  <dt>Tipo de conexão</dt><dd>${esc(r.atend)} · ${r.Vfn}/${r.Vff} V</dd>
+  ${r.ramalAereo?`<dt>Ramal de conexão aéreo</dt><dd>${esc(r.ramalAereo)} · transformador de referência ${r.trafo} kVA (Tabela 17, instalado pela Enel)</dd>`:""}
+  <dt>Ramal de conexão subterrâneo</dt><dd>${r.sub?`${esc(r.sub[3])}, caixa de passagem ${esc(r.sub[1])}, barramento múltiplo ${esc(r.sub[2])} (Tabela 12, instalado pela Enel)`:"acima de 1.000 A: ramal instalado pela Enel até a entrada geral"}</dd>
+  <dt>Proteção geral</dt><dd>${r.disj?`${r.cab.n>1?r.cab.n+" disjuntores tripolares de ":"disjuntor tripolar "}${r.disj} A, igual ou imediatamente superior à corrente de demanda${r.cab.n>1?` de cada ramal (${fmt(r.cab.In,0)} A)`:""} e coordenado com o cabo (7.19.6)`:"—"}</dd>
+  <dt>Ramal de entrada</dt><dd>${r.cab?`${r.cab.n>1?r.cab.n+" ramais, cada um com ":""}3 × ${mm(r.cab.s)} + N ${mm(r.cab.s)} cobre ${+r.metodo===1?"EPR/XLPE 0,6/1 kV":"PVC 750 V"}, sem paralelo · Iz ${fmt(r.cab.Iz,0)} A · neutro azul, mesma seção da fase`:"—"}</dd>
+  <dt>Queda de tensão</dt><dd>${r.cab?`${fmt(r.cab.dv)} % em ${fmt(r.L,1)} m (máx. ${r.dvMax}% até a medição mais distante – ${r.habit?"uso habitacional":"uso comercial, industrial ou misto"})`:"—"}</dd>
+  <dt>Poste particular</dt><dd>${esc(r.poste)} (Tabela 18, nota 4)</dd>
+  <dt>Barramento</dt><dd>${esc(r.barr)} · cobre estanhado ou prateado, fases L1 azul-escuro, L2 branco, L3 violeta, neutro azul-claro, com barreira de policarbonato e identificação da bitola</dd>
+  <dt>Caixa de barramentos</dt><dd>${esc(r.caixaBarr)}</dd>
+  <dt>Administração</dt><dd>${r.admR?`tipo ${esc(r.admR.cat)} ${r.admR.disj} A (ET 0017)`:"—"}</dd>
+ </dl></div>`:`<div class="card"><h3>Entrada consumidora</h3><dl class="spec">
+  <dt>Atendimento</dt><dd>${esc(r.atend)} · ${r.Vfn}/${r.Vff} V</dd>
+  <dt>Disjuntor geral</dt><dd>tripolar termomagnético ${r.disj||"—"} A, isolamento ≥ 380 V, capacidade de interrupção ≥ 20 kA (rede secundária, 6.7.2.1)</dd>
+  <dt>Ramal de entrada</dt><dd>${r.cab?`${r.cab.n>1?r.cab.n+" circuitos em paralelo de ":""}3 × ${mm(r.cab.s)} + N ${mm(r.cab.s)} cobre ${+r.metodo===1?"EPR/XLPE 0,6/1 kV":"PVC 750 V"} · Iz ${fmt(r.cab.Iz,0)} A (Tabela 11)`:"—"}</dd>
+  <dt>Queda de tensão</dt><dd>${r.cab?`${fmt(r.cab.dv)} % em ${fmt(r.L,1)} m (máx. 3% entre ponto de conexão e quadro de medidores)`:"—"}</dd>
+  <dt>Eletroduto</dt><dd>um circuito completo (3F + N) por eletroduto, ocupação ≤ 40% (6.3.1.2.1 h)</dd>
+  <dt>Barramento</dt><dd>cobre ${esc(r.barr)} (Tabela 12)</dd>
+  <dt>Poste / coluna</dt><dd>${esc(r.poste)} (Tabela 18)</dd>
+  <dt>Transformador de referência</dt><dd>${esc(r.trafo)} kVA (Tabela 10)</dd>
+  <dt>Administração</dt><dd>${r.admR?`categoria ${esc(r.admR.cat)} ${r.admR.disj} A; chave tripolar blindada de abertura em carga, sem proteção (6.7.2.1)`:"—"}</dd>
+ </dl></div>`}
+ <div class="card"><h3>Unidades consumidoras <small>${r.enel?"tipo de fornecimento pela ET 0017":"categoria pela GED 13"}</small></h3><div class="tw"><table><thead><tr><th>Tipo</th><th class="n">Qtd</th><th class="n">CI / unid. (kW)</th><th>Categoria</th><th class="n">Disjuntor</th><th class="n">Cabo Cu</th><th>Limite de motores</th></tr></thead><tbody>
+  ${r.unidades.map(u=>`<tr><td>${esc(u.nome)}</td><td class="n">${u.qtd}</td><td class="n">${fmt(u.CI)}</td><td>${esc(u.cat)}</td><td class="n">${u.disj} A</td><td class="n">${fmt(u.S,0)} mm²</td><td>${esc(u.row.mot||"")}</td></tr>`).join("")}
+  ${r.admR?`<tr><td>Administração</td><td class="n">1</td><td class="n">${fmt(r.admR.CI)}</td><td>${esc(r.admR.cat)}</td><td class="n">${r.admR.disj} A</td><td class="n">${fmt(r.admR.S,0)} mm²</td><td>${esc(r.admR.row.mot||"")}</td></tr>`:""}
+ </tbody></table></div><p class="note">${r.enel?"Tipo de fornecimento de cada unidade pela ET 0017 (Tabela 2 e Anexo B). Medição direta até 100 A de corrente de demanda por unidade.":"Categorias de cada unidade pela GED 13, Tabela 1, como manda a GED-119 (6.11.2). Tabelas 16 e 17 da GED-119 trazem os mesmos limites de motores."}</p></div>`}
+function svgColetivo(p,r){const rows=r.unidades.map(u=>`${u.qtd}× ${u.nome} · ${u.cat} ${u.disj} A`).concat(r.admR?[`1× Administração · ${r.admR.cat} ${r.admR.disj} A`]:[]);const h=Math.max(300,140+rows.length*26);
+ return`<svg viewBox="0 0 960 ${h}" xmlns="http://www.w3.org/2000/svg" font-family="IBM Plex Mono, monospace" font-size="12"><rect width="960" height="${h}" fill="var(--paper)"/>
+ <g stroke="var(--ink)" stroke-width="2" fill="none"><line x1="60" y1="40" x2="60" y2="${h-40}"/><line x1="60" y1="120" x2="190" y2="120"/><circle cx="190" cy="120" r="5" fill="var(--ink)"/>
+ <line x1="190" y1="120" x2="330" y2="120"/><rect x="330" y="90" width="120" height="60"/><line x1="450" y1="120" x2="520" y2="120"/>
+ <line x1="520" y1="80" x2="520" y2="${100+rows.length*26}" stroke-width="5"/>
+ ${rows.map((t,i)=>`<line x1="520" y1="${100+i*26}" x2="600" y2="${100+i*26}"/><circle cx="610" cy="${100+i*26}" r="9"/>`).join("")}</g>
+ <g fill="var(--ink)"><text x="60" y="28" text-anchor="middle" font-weight="600">REDE ${r.enel?"ENEL SP":"CPFL"}</text><text x="70" y="${h-24}">${r.Vfn}/${r.Vff} V</text>
+ <text x="125" y="110" text-anchor="middle">ramal de conexão</text><text x="190" y="146" text-anchor="middle">ponto de conexão</text>
+ <text x="260" y="110" text-anchor="middle">${r.cab?`${r.cab.n>1?r.cab.n+"×":""}3#${r.cab.s}+N${r.cab.s}`:"—"}</text><text x="260" y="140" text-anchor="middle" fill="var(--muted)">${fmt(r.L,0)} m</text>
+ <text x="390" y="115" text-anchor="middle" font-weight="600">disjuntor geral</text><text x="390" y="132" text-anchor="middle">${r.enel&&r.cab&&r.cab.n>1?r.cab.n+" × ":""}${r.disj||"—"} A tripolar</text>
+ <text x="520" y="68" text-anchor="middle">quadro de medidores · barra ${esc(r.barr.split(" (")[0])}</text>
+ ${rows.map((t,i)=>`<text x="610" y="${104+i*26}" text-anchor="middle" font-size="9">kWh</text><text x="630" y="${104+i*26}">${esc(t)}</text>`).join("")}
+ <text x="940" y="${h-12}" text-anchor="end" fill="var(--muted)" font-size="10">${esc(p.nome)} · Dg = ${fmt(r.Dg)} kVA · sem escala</text></g></svg>`}
+function memorialColetivo(p,r){const rt=S.config.rt;const hoje=new Date().toLocaleDateString("pt-BR");const ed=p.ed;
+ const cols=Object.keys(ED_TIPOS).filter(k=>k!=="ilum"&&(r.cnt[k]||0)>0);
+ return`<h2>MEMORIAL DESCRITIVO</h2><p style="text-align:center">Entrada de energia elétrica de edifício de uso coletivo</p>
+ <h4>1. Identificação</h4><p><b>Empreendimento:</b> ${esc(p.cliente)||"________"}<br><b>Endereço:</b> ${esc(p.endereco)||"________"} – ${esc(p.municipio)||"____"}/SP ${p.cep?"– CEP "+esc(p.cep):""}<br><b>Distribuidora:</b> ${esc(NORMAS[r.enel?"enel":"cpfl"].nome)}<br><b>Uso:</b> ${esc(ed.uso)} · <b>Unidades:</b> ${r.nAptos} + administração · <b>Finalidade:</b> ${esc(p.finalidade)}</p>
+ <h4>2. Normas e regulamentos</h4><p>${r.enel?`${esc(ET0018_REF)}; ${esc(NORMAS.enel.ref)}; ${esc(GED119_REF)}, item 6.11 (método de cálculo da demanda adotado pelo responsável técnico, conforme ET 0018, 7.8.4)`:`${esc(GED119_REF)}; ${esc(NORMAS.cpfl.ref)}`}; ABNT NBR 5410; Resolução Normativa ANEEL nº 1.000/2021; NR-10.</p>
+ <h4>3. Unidades consumidoras</h4><table><thead><tr><th>Tipo</th><th class="n">Qtd</th><th class="n">Área útil (m²)</th><th class="n">CI/unid. (kW)</th><th>Categoria (GED 13)</th></tr></thead><tbody>
+  ${ed.grupos.map((g,i)=>`<tr><td>${esc(g.nome)}</td><td class="n">${r.unidades[i].qtd}</td><td class="n">${fmt(+g.area||0,1)}</td><td class="n">${fmt(r.unidades[i].CI)}</td><td>${esc(r.unidades[i].cat)} – ${r.unidades[i].disj} A</td></tr>`).join("")}
+  ${r.admR?`<tr><td>Administração</td><td class="n">1</td><td class="n">${fmt(+ed.areaAdm||0,1)}</td><td class="n">${fmt(r.admR.CI)}</td><td>${esc(r.admR.cat)} – ${r.admR.disj} A</td></tr>`:""}</tbody></table>
+ <h4>4. Cálculo da demanda geral da entrada (GED-119, item 6.11)</h4>
+ <p><b>D1 – Iluminação e tomadas:</b> ${r.res?`unidades ${fmt(r.D1.apt)} kVA (área útil × 5 W/m²); administração ${fmt(+ed.areaAdm||0,1)} m² × 5 W/m² = ${fmt(r.D1.adm)} kVA.`:`unidades ${fmt(r.D1.apt)} kVA; administração ${fmt(r.D1.adm)} kVA (Tabela 1: ${esc(G119_T1[+ed.atividade||0][0])}).`}<br>
+ <b>D2 – Aparelhos:</b> ${cols.map(k=>`${esc(ED_TIPOS[k].n.toLowerCase())}: ${r.cnt[k]} aparelhos, ${typeof ED_TIPOS[k].col==="number"||ED_TIPOS[k].col==="ar"?"FD "+fmt(r.fdOf(k)):ED_TIPOS[k].col==="esp"?"100%/60%":"FD 1"} → ${fmt(r.D2col[k]||0)} kVA`).join("; ")||"—"}. Unidades ${fmt(r.D2.apt)} kVA; administração ${fmt(r.D2.adm)} kVA.<br>
+ <b>D3 – Motores:</b> total ${fmt(r.motTot)} kVA (Tabelas 4 e 5); maior motor ${fmt(r.mots[0]||0)} kVA × 1,0 + demais ${fmt(r.motTot-(r.mots[0]||0))} kVA × 0,5 = ${fmt(r.D3)} kVA.<br>
+ <b>Unidades:</b> (${fmt(r.D1.apt)} + ${fmt(r.D2.apt)}) × ${fmt(r.coef)} ${r.res?`(Tabela 7, ${r.nAptos} unidades)`:""} = ${fmt(r.Dapt)} kVA.<br>
+ <b>Administração:</b> ${fmt(r.D1.adm)} + ${fmt(r.D2.adm)} + ${fmt(r.D3)} = ${fmt(r.Dadm)} kVA.<br>
+ <b>Demanda geral da entrada: Dg = ${fmt(r.Dg)} kVA</b> · corrente ${fmt(r.I,1)} A em ${r.Vff} V.</p>
+ ${r.enel?`<h4>5. Entrada consumidora (ET 0018)</h4><p><b>Tipo de conexão:</b> ${esc(r.atend)}.<br>
+ ${r.ramalAereo?`<b>Ramal de conexão aéreo (Enel):</b> ${esc(r.ramalAereo)}, transformador de referência ${r.trafo} kVA (Tabela 17).<br>`:""}
+ <b>Proteção geral:</b> ${r.cab&&r.cab.n>1?`${r.cab.n} disjuntores tripolares de ${r.disj} A, um por ramal de entrada (corrente de demanda total ${fmt(r.I,1)} A, cerca de ${fmt(r.cab.In,1)} A por ramal)`:`disjuntor tripolar ${r.disj||"—"} A, igual ou imediatamente superior à corrente de demanda de ${fmt(r.I,1)} A`}, coordenado com os condutores.<br>
+ <b>Ramal de entrada:</b> ${r.cab?`${r.cab.n>1?r.cab.n+" ramais, cada um com ":""}3 × ${mm(r.cab.s)} + neutro ${mm(r.cab.s)}, cobre ${+r.metodo===1?"EPR/XLPE 0,6/1 kV":"PVC 750 V"}, sem condutores em paralelo num mesmo dispositivo de proteção; capacidade ${fmt(r.cab.Iz,0)} A (NBR 5410).`:"—"}<br>
+ <b>Queda de tensão</b> entre o ponto de conexão e a medição mais distante (${fmt(r.L,1)} m): ${r.cab?fmt(r.cab.dv):"—"} % (máximo ${r.dvMax}%).<br>
+ <b>Poste particular:</b> ${esc(r.poste)}.<br>
+ <b>Barramento da caixa de barramentos:</b> ${esc(r.barr)}; barras de cobre estanhado ou prateado, fixadas em isoladores, identificadas nas cores da NBR 5410 e protegidas por barreira de policarbonato. Caixa de barramentos ${esc(r.caixaBarr)}.<br>O tipo e a quantidade de condutores do ramal de entrada serão confirmados pela Enel após a Solicitação de Atendimento Técnico.</p>`:`<h4>5. Entrada consumidora</h4><p><b>Atendimento:</b> ${esc(r.atend)}.<br><b>Disjuntor geral:</b> tripolar termomagnético ${r.disj||"—"} A, isolamento ≥ 380 V, capacidade de interrupção ≥ 20 kA.<br>
+ <b>Ramal de entrada:</b> ${r.cab?`${r.cab.n>1?r.cab.n+" circuitos em paralelo, cada um com ":""}3 × ${mm(r.cab.s)} + neutro ${mm(r.cab.s)}, cobre ${+r.metodo===1?"EPR/XLPE 0,6/1 kV em duto enterrado":"PVC 750 V em eletroduto"}; capacidade ${fmt(r.cab.Iz,0)} A (Tabela 11).`:"—"}<br>
+ <b>Queda de tensão</b> entre o ponto de conexão e o quadro de medidores (${fmt(r.L,1)} m): ${r.cab?fmt(r.cab.dv):"—"} % (máximo 3%).<br><b>Eletrodutos:</b> um circuito completo por eletroduto, taxa de ocupação ≤ 40%.<br>
+ <b>Barramento do quadro de medidores:</b> ${esc(r.barr)}.<br><b>Poste / coluna de entrada:</b> ${esc(r.poste)}.<br><b>Administração:</b> chave tripolar blindada de abertura em carga (NBR IEC 60947-1 e 3).</p>`}
+ <h4>6. Observações</h4><p>Não haverá interligação elétrica entre cargas de entradas distintas. DPS, aterramento, caixas e centro de medição conforme ${r.enel?"ET 0018":"GED-119"} e desenhos da norma. ${esc(p.obs)}</p>
+ <p style="margin-top:36px">${esc(p.municipio)||"________"}, ${hoje}.</p>
+ <p style="margin-top:40px">______________________________________<br>${esc(rt.nome)||"Responsável técnico"}<br>${esc(rt.registro)||"CREA / CFT nº ______"}${p.art?` · ART/TRT nº ${esc(p.art)}`:""}${rt.empresa?`<br>${esc(rt.empresa)}`:""}</p>`}
+
+/* ===================== Persistência ===================== */
+let saveTimers={},saving={};
+function touch(p){p.atualizadoEm=new Date().toISOString();clearTimeout(saveTimers[p.id]);saveTimers[p.id]=setTimeout(()=>{delete saveTimers[p.id];persist(p)},700)}
+async function persist(p){if(!store)return;if(saving[p.id]){saving[p.id]="again";return}saving[p.id]=true;
+  try{await store.save(JSON.parse(JSON.stringify(p)))}catch(e){toast(e&&e.code==="quota_exceeded"?"Limite de armazenamento atingido. Exclua projetos antigos.":"Não foi possível salvar agora. Tentaremos de novo na próxima edição.")}
+  const again=saving[p.id]==="again";saving[p.id]=false;if(again)persist(p)}
+let cfgTimer;function touchCfg(){clearTimeout(cfgTimer);cfgTimer=setTimeout(async()=>{try{store&&await store.saveConfig(JSON.parse(JSON.stringify(S.config)))}catch(e){toast("Não foi possível salvar as configurações.")}},700)}
+function mergeCfg(c){const d=defaultConfig();return{...d,dvMax:+c.dvMax||d.dvMax,rho:+c.rho||d.rho,kind:"config",rt:{...d.rt,...(c.rt||{})}}}
+function localStore(){const K="entradaBT.v1";
+  const read=()=>{try{return JSON.parse(localStorage.getItem(K)||"{}")}catch(e){return{}}};
+  const write=o=>{try{localStorage.setItem(K,JSON.stringify(o))}catch(e){}};
+  const o=read();S.projects=o.projects||[];if(o.config)S.config=mergeCfg(o.config);
+  return{save:async p=>{const x=read();x.projects=(x.projects||[]).filter(q=>q.id!==p.id).concat([p]);write(x)},
+    del:async id=>{const x=read();x.projects=(x.projects||[]).filter(q=>q.id!==id);write(x)},
+    saveConfig:async c=>{const x=read();x.config=c;write(x)}}}
+async function initStore(){
+  let db=null,user=null;
+  try{if(window.claude&&window.claude.use){[db,user]=await Promise.all([window.claude.use("db"),window.claude.use("user")])}}catch(e){}
+  let id=null;try{id=user?await user.id():null}catch(e){}
+  if(!db||!id){store=localStore();$("#storeNote").textContent="salvo neste navegador";render();return}
+  const col=db.collection("data/users/"+id);
+  store={save:p=>col.doc(p.id).set(p),del:i=>col.doc(i).delete(),saveConfig:c=>col.doc("config").set(c)};
+  $("#storeNote").textContent="carregando projetos…";
+  const timer=setTimeout(()=>{$("#storeNote").textContent="sem conexão com o armazenamento ainda"},10000);
+  col.onSnapshot(snap=>{
+    if(!snap.metadata.fromCache){clearTimeout(timer);$("#storeNote").textContent="salvo na sua conta · privado"}
+    const ps=[];let cfg=null;
+    for(const d of snap.docs){const v=d.data();if(!v)continue;if(v.kind==="config")cfg=v;else if(v.kind==="projeto")ps.push(v)}
+    S.projects=ps.map(p=>{const loc=S.projects.find(q=>q.id===p.id);return loc&&(saveTimers[p.id]||saving[p.id])&&(loc.atualizadoEm>=p.atualizadoEm)?loc:p})
+      .concat(S.projects.filter(q=>!ps.find(p=>p.id===q.id)&&(saving[q.id]||saveTimers[q.id])));
+    if(cfg)S.config=mergeCfg(cfg);
+    renderSide();if(!isTyping())renderMain();
+  },err=>{clearTimeout(timer);$("#storeNote").textContent="armazenamento indisponível nesta visita"});
+  render();
+}
+function isTyping(){const a=document.activeElement;return a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)&&$("#main").contains(a)}
+
+/* ===================== Renderização ===================== */
+function render(){renderSide();renderMain()}
+function renderSide(){
+  const q=($("#busca").value||"").toLowerCase(),fs=$("#filtroStatus").value;
+  const ps=S.projects.filter(p=>(!fs||p.status===fs)&&(!q||[p.nome,p.cliente,p.endereco,p.municipio,p.protocolo,p.instalacao].join(" ").toLowerCase().includes(q)))
+    .sort((a,b)=>(b.atualizadoEm||"").localeCompare(a.atualizadoEm||""));
+  $("#plist").innerHTML=ps.length?ps.map(p=>{const s=stInfo(p.status);return`<button class="pitem${p.id===S.cur?" on":""}" data-id="${esc(p.id)}">
+    <b>${esc(p.nome||"Sem nome")}</b><small><span class="pill ${s[2]}">${s[1]}</span><span>${(NORMAS[p.conc]||NORMAS.cpfl).curto}</span><span>${esc(p.municipio)}</span></small></button>`}).join("")
+    :`<p class="note">${S.projects.length?"Nenhum projeto com esse filtro.":"Nenhum projeto ainda."}</p>`;
+}
+const TABS=[["dados","Dados"],["cargas","Cargas e demanda"],["dim","Dimensionamento"],["unifilar","Diagrama unifilar"],["memorial","Memorial"],["tabelas","Normas e RT"]];
+function renderMain(){
+  const p=cur();const m=$("#main");
+  if(!p&&S.tab!=="tabelas"){m.innerHTML=`<div class="card empty"><h3>Comece um projeto de entrada de energia</h3>
+    <p>Cadastre o cliente e lance o quadro de cargas. O app calcula a demanda pelo método da GED 13, enquadra a categoria na tabela da CPFL ou da Enel SP e indica disjuntor, condutores, eletroduto, aterramento e poste. Depois gera o diagrama unifilar e o memorial descritivo.</p>
+    <div class="row" style="justify-content:center;margin-top:14px"><button class="btn pri" data-act="novo">+ Novo projeto</button><button class="btn" data-ex="casa-enel">Exemplo: casa Enel</button><button class="btn" data-ex="ed-enel">Exemplo: edifício Enel</button><button class="btn" data-ex="casa-cpfl">Exemplo: casa CPFL</button><button class="btn" data-ex="ed-cpfl">Exemplo: edifício CPFL</button><button class="btn" data-act="tabs-tabelas">Ver tabelas das normas</button></div></div>`;return}
+  const tabs=`<nav class="tabs" role="tablist">${TABS.map(t=>(!p&&t[0]!=="tabelas")?"":`<button class="tab${S.tab===t[0]?" on":""}" role="tab" data-tab="${t[0]}">${p&&p.tipo==="coletivo"&&t[0]==="cargas"?"Edifício e demanda":t[1]}</button>`).join("")}</nav>`;
+  let body="";
+  if(S.tab==="tabelas")body=viewTabelas();
+  else if(p.tipo==="coletivo"){if(!p.ed)p.ed=novoEd();const r=calcColetivo(p,S.config);
+    body=S.tab==="dados"?viewDados(p):S.tab==="cargas"?viewEdificio(p,r):S.tab==="dim"?viewDimCol(p,r):S.tab==="unifilar"?`<div class="card"><h3>Diagrama unifilar <small>entrada coletiva</small></h3><div class="diag">${svgColetivo(p,r)}</div><div class="row" style="margin-top:10px"><button class="btn" data-act="dl-svg">Baixar SVG</button></div></div>`:viewMemorial(p,r)}
+  else{const r=calc(p,S.config);
+    body=S.tab==="dados"?viewDados(p):S.tab==="cargas"?viewCargas(p,r):S.tab==="dim"?viewDim(p,r):S.tab==="unifilar"?viewUnifilar(p,r):viewMemorial(p,r)}
+  m.innerHTML=tabs+body;
+}
+function fld(k,label,v,type="text",extra=""){return`<label class="f">${label}<input id="f_${k}" data-k="${k}" type="${type}" value="${esc(v)}" ${extra}></label>`}
+function sel(k,label,v,opts){return`<label class="f">${label}<select id="f_${k}" data-k="${k}">${opts.map(o=>{const[val,t]=Array.isArray(o)?o:[o,o];return`<option value="${esc(val)}"${val==v?" selected":""}>${esc(t)}</option>`}).join("")}</select></label>`}
+function viewDados(p){const s=stInfo(p.status);const tens=NORMAS[p.conc].tensoes;return`
+ <div class="card"><h3>Identificação <small>dados do cliente e da unidade consumidora</small></h3><div class="grid">
+  ${sel("tipo","Tipo de projeto",p.tipo||"individual",[["individual","Conexão individual (casa, loja)"],["coletivo","Edifício de uso coletivo (GED-119, CPFL)"]])}
+  ${fld("nome","Nome do projeto",p.nome)}${fld("cliente","Cliente / titular",p.cliente)}${fld("endereco","Endereço da obra",p.endereco)}
+  ${fld("municipio","Município (SP)",p.municipio)}${fld("cep","CEP",p.cep)}${fld("instalacao","Nº da instalação / UC (se houver)",p.instalacao)}
+  ${sel("finalidade","Finalidade",p.finalidade,["Ligação nova","Aumento de carga","Alteração de categoria","Ligação provisória de obra","Regularização"])}
+  ${sel("uso","Classe de consumo",p.uso,["Residencial","Comercial","Industrial","Rural","Poder público"])}
+  ${p.uso!=="Residencial"?fld("fdIlum","FD de iluminação e TUGs (GED 13, Tab. 15)",p.fdIlum,"number",'min="0.1" max="1" step="0.01"'):""}
+ </div></div>
+ <div class="card"><h3>Fornecimento</h3><div class="grid">
+  ${sel("conc","Concessionária",p.conc,[["cpfl","CPFL (Paulista / Piratininga / Santa Cruz)"],["enel","Enel Distribuição São Paulo"]])}
+  ${sel("tensao","Tensão da rede",tens.includes(p.tensao)?p.tensao:tens[0],tens.map(t=>[t,t+" V"]))}
+  ${sel("entrada","Tipo de ramal",p.entrada,["Aérea","Subterrânea"])}
+  ${fld("distRamal","Ramal de entrada: ponto de conexão → medição (m)",p.distRamal,"number",'min="0" step="0.5"')}
+  ${fld("distAlim","Alimentador: medição → quadro geral (m)",p.distAlim,"number",'min="0" step="0.5"')}
+ </div>
+ ${p.tipo==="coletivo"?`<p class="note" style="margin-top:12px">Edifício coletivo: a distância do ramal de entrada é do ponto de conexão até o quadro de medidores (queda de tensão máxima de 3%).</p>`:`<label class="chk" style="margin-top:12px"><input type="checkbox" id="f_trifasico" data-k="trifasico" ${p.trifasico?"checked":""}> Há motor, equipamento ou aparelho trifásico (força o atendimento trifásico)</label>`}
+ <p class="note" style="margin-top:10px">${p.conc==="enel"?"Enel SP, rede aérea 127/220 V estrela. As redes delta 120/240 V e subterrâneas não estão cobertas por este app.":"CPFL: confirme no pedido de viabilidade se o município é atendido em 127/220 V ou 220/380 V."}${p.entrada==="Subterrânea"?" <b>Ramal subterrâneo:</b> o dimensionamento usa a tabela de rede aérea; confira os requisitos próprios de entrada subterrânea na norma.":""}</p></div>
+ <div class="card"><h3>Andamento na concessionária <small><span class="pill ${s[2]}">${s[1]}</span></small></h3><div class="grid">
+  ${sel("status","Status",p.status,STATUS.map(x=>[x[0],x[1]]))}${fld("protocolo","Nº do protocolo / pedido",p.protocolo)}
+  ${fld("dataProtocolo","Data do protocolo",p.dataProtocolo,"date")}${fld("art","ART / TRT nº",p.art)}
+ </div><label class="f" style="margin-top:12px">Observações e pendências<textarea id="f_obs" data-k="obs">${esc(p.obs)}</textarea></label>
+ <div class="row" style="margin-top:14px">
+  <button class="btn" data-act="duplicar">Duplicar projeto</button>
+  ${S.confirmDel?`<span class="confirm">Excluir “${esc(p.nome)}” de vez? <button class="btn sm danger" data-act="delok">Excluir</button><button class="btn sm" data-act="delno">Cancelar</button></span>`:`<button class="btn danger" data-act="del">Excluir projeto</button>`}
+ </div></div>`}
+function viewCargas(p,r){
+ const rows=p.cargas.map((c,i)=>`<tr>
+  <td><input id="c${i}d" data-ci="${i}" data-cf="d" value="${esc(c.d)}" aria-label="Descrição"></td>
+  <td><select id="c${i}t" data-ci="${i}" data-cf="t" aria-label="Tipo">${Object.entries(TIPOS).map(([k,v])=>`<option value="${k}"${(TIPOS[c.t]?c.t:"outros")===k?" selected":""}>${v.par}) ${v.n}</option>`).join("")}</select></td>
+  <td><input id="c${i}q" data-ci="${i}" data-cf="q" type="number" min="0" step="1" value="${esc(c.q)}" style="width:64px" aria-label="Quantidade"></td>
+  <td><input id="c${i}p" data-ci="${i}" data-cf="p" type="number" min="0" step="10" value="${esc(c.p)}" style="width:92px" aria-label="Potência unitária W"></td>
+  <td><input id="c${i}f" data-ci="${i}" data-cf="fp" type="number" min="0.1" max="1" step="0.01" value="${esc(c.fp)}" style="width:72px" aria-label="Fator de potência"></td>
+  <td class="n">${fmt((+c.q||0)*(+c.p||0)/1000)}</td>
+  <td><button class="btn sm danger" data-rm="${i}" aria-label="Remover carga">✕</button></td></tr>`).join("");
+ return`<div class="card"><h3>Quadro de cargas</h3>
+  <div class="row" style="margin-bottom:10px"><select id="preset" aria-label="Adicionar carga típica" style="max-width:360px"><option value="">Adicionar carga típica…</option>${PRESETS.map((x,i)=>`<option value="${i}">${esc(x[0])}</option>`).join("")}</select>
+  <button class="btn" data-act="addcarga">+ Linha em branco</button></div>
+  <div class="tw"><table><thead><tr><th>Descrição</th><th>Parcela (GED 13)</th><th>Qtd</th><th>Pot. unit. (W)</th><th>FP</th><th class="n">Total (kW)</th><th></th></tr></thead>
+  <tbody>${rows||`<tr><td colspan="7" class="note">Nenhuma carga lançada. Use “Adicionar carga típica” acima.</td></tr>`}</tbody>
+  <tfoot><tr><th colspan="5">Carga instalada</th><th class="n">${fmt(r.CI)} kW</th><th></th></tr></tfoot></table></div>
+  <p class="note">Potências de ar-condicionado pela Tabela 8 e de motores monofásicos pela Tabela 13 da GED 13 (potência absorvida da rede). Use os dados de placa quando houver. Residência: a carga mínima de tomadas por área construída está na Tabela 2 da GED 13.</p></div>
+  ${viewDemanda(p,r)}`}
+function viewDemanda(p,r){const rows=Object.entries(r.P).map(([k,x])=>{const t=Object.values(TIPOS).find(v=>v.par===k);const G=r.g[Object.keys(TIPOS).find(q=>TIPOS[q].par===k)];
+  return`<tr><td>${k} – ${esc(t.n)}</td><td>${esc(x.crit)}</td><td class="n">${fmt(G.kva)}</td><td class="n">${x.fd==null?"—":fmt(x.fd)}</td><td class="n">${fmt(x.v)}</td></tr>`}).join("");
+ return`<div class="card"><h3>Cálculo da demanda <small>GED 13, item 6.22.1 · D = a + b + c + d + e + f + g + h + i (+ j)</small></h3>
+  <div class="tw"><table><thead><tr><th>Parcela</th><th>Critério</th><th class="n">Instalada (kVA)</th><th class="n">FD</th><th class="n">Demanda (kVA)</th></tr></thead><tbody>${rows}</tbody>
+  <tfoot><tr><th colspan="4">Demanda provável total</th><th class="n">${fmt(r.D)} kVA</th></tr></tfoot></table></div>
+  <p class="note">${p.conc==="enel"?"A ET 0017 da Enel deixa a determinação da demanda a cargo do responsável técnico (item 7.8). O app usa o método da GED 13, que é publicado e completo; cite-o no memorial.":"Pela GED 13 o cálculo de demanda é obrigatório quando a carga instalada passa de 25 kW. Abaixo disso a categoria sai da carga instalada."} A parcela j (outros) não faz parte da fórmula da GED 13; é somada com FD 1 por segurança e inclui recarga de veículo elétrico (item 6.21).</p></div>`}
+function viewDim(p,r){const R=r.row;const enel=r.conc==="enel";return`
+ ${r.msgs.map(m=>`<div class="alert ${m[0]==="bad"?"bad":m[0]==="info"?"ok":""}">${esc(m[1])}</div>`).join("")}
+ <div class="card"><h3>Resultado <small>${esc(NORMAS[r.conc].nome)} · ${r.Vfn}/${r.Vff} V</small></h3>
+ <div class="kpis">
+  <div class="kpi"><span>Carga instalada</span><b>${fmt(r.CI)} kW</b></div>
+  <div class="kpi"><span>Demanda provável</span><b>${fmt(r.D)} kVA</b></div>
+  <div class="kpi"><span>Corrente de demanda</span><b>${fmt(r.IB,1)} A</b></div>
+  <div class="kpi hi"><span>${enel?"Tipo de fornecimento":"Categoria"}</span><b>${esc(R.cat)} · ${R.disj} A</b></div>
+ </div></div>
+ <div class="card"><h3>Materiais do padrão de entrada <small>${enel?"ET 0017, Anexo B (valores mínimos)":"GED 13, Tabela 1"}</small></h3><dl class="spec">
+  <dt>Atendimento</dt><dd>${r.tipoF} · ${r.fases===1?r.Vfn:r.Vff} V${r.fases>1?` / ${r.Vfn} V`:""}</dd>
+  <dt>Disjuntor geral</dt><dd>termomagnético ${r.fases===1?"monopolar":r.fases===2?"bipolar":"tripolar"} ${R.disj} A · capacidade de interrupção ${r.icc}${enel?` · classe de tensão ≥ ${r.Vfn===127?250:500} V`:""}</dd>
+  ${enel?`<dt>Ramal de conexão (Enel)</dt><dd>${esc(R.rc)} mm² · ponto de conexão no ${R.pc.toLowerCase()}</dd>`:""}
+  <dt>Ramal de entrada – fases</dt><dd>${r.fases} × ${mm(r.S)} cobre${!enel?` (ou ${mm(R.al)} alumínio)`:""}${r.S!==r.Snorma?` · norma: ${mm(r.Snorma)}`:""}</dd>
+  <dt>Neutro</dt><dd>1 × ${mm(r.SN)} cobre</dd>
+  <dt>Condutor de proteção (PE)</dt><dd>1 × ${mm(r.SPE)} cobre (NBR 5410)</dd>
+  <dt>Eletroduto do ramal</dt><dd>${R.elet} mm (${DN_POL[R.elet]||""}) PVC rígido roscável</dd>
+  <dt>Aterramento</dt><dd>condutor ${mm(r.Sat)} cobre · eletroduto ${enel?"32 mm PVC ou 25 mm aço":"20 mm"} · haste aço-cobreada NBR 13571${enel?" a até 0,50 m da caixa de medição":""}</dd>
+  <dt>Poste</dt><dd>${esc(R.poste)}${!enel?" (DT, aço ou fibra) ou poste + caixa de medição":""}</dd>
+  <dt>Medição</dt><dd>${R.med}${R.caixa?` · caixa ${esc(R.caixa)}`:enel?` · caixa conforme Tabela 7 da ET 0017`:""}</dd>
+  ${R.mot?`<dt>Limite de motores</dt><dd>${esc(R.mot)}</dd>`:enel?`<dt>Motores</dt><dd>limite por tipo na Tabela 11 da ET 0017; partida direta até 5 cv trifásico</dd>`:""}
+  <dt>DPS</dt><dd>${esc(r.dps)}</dd>
+  <dt>Queda de tensão</dt><dd>${fmt(r.dvPct)} % em ${fmt(r.L,1)} m (limite adotado ${fmt(r.dvMax,1)} %) ${r.dvPct<=r.dvMax?'<span class="pill ok">OK</span>':'<span class="pill bad">acima</span>'}</dd>
+ </dl><p class="note" style="margin-top:12px">${enel?"Pela ET 0017 (Anexo B, nota 8) a corrente de demanda deve ser menor ou igual ao disjuntor escolhido; o app pega o menor disjuntor do tipo que atende. Seção do ramal de entrada: mínimo 10 mm², máximo 35 mm² com medição direta (nota 6).":"Na GED 13, mono e bifásico são enquadrados pela carga instalada (até 25 kW); trifásico, pela demanda."} Neutro e PE seguem a NBR 5410.</p></div>`}
+function viewUnifilar(p,r){return`<div class="card"><h3>Diagrama unifilar <small>gerado a partir do dimensionamento</small></h3><div class="diag">${svgUnifilar(p,r)}</div>
+ <div class="row" style="margin-top:10px"><button class="btn" data-act="dl-svg">Baixar SVG</button></div></div>`}
+function svgUnifilar(p,r){
+ const n=r.fases,S=fmt(r.S,0),SN=fmt(r.SN,0),SPE=fmt(r.SPE,0);
+ const ticks=(x,y)=>Array.from({length:n},(_,i)=>`<line x1="${x-12+i*7}" y1="${y+7}" x2="${x-4+i*7}" y2="${y-7}"/>`).join("")+`<line x1="${x-12+n*7}" y1="${y+7}" x2="${x-4+n*7}" y2="${y-7}" stroke-dasharray="3 2"/>`;
+ return`<svg viewBox="0 0 960 360" xmlns="http://www.w3.org/2000/svg" font-family="IBM Plex Mono, monospace" font-size="12">
+ <rect width="960" height="360" fill="var(--paper)"/>
+ <g stroke="var(--ink)" stroke-width="2" fill="none">
+  <line x1="60" y1="40" x2="60" y2="300"/><line x1="40" y1="70" x2="80" y2="70"/>
+  <line x1="60" y1="150" x2="200" y2="150"/><circle cx="200" cy="150" r="5" fill="var(--ink)"/>
+  <line x1="200" y1="150" x2="330" y2="150"/><rect x="330" y="120" width="70" height="60"/>
+  <line x1="400" y1="150" x2="476" y2="150"/><line x1="476" y1="150" x2="500" y2="136"/><line x1="500" y1="150" x2="560" y2="150"/>
+  <path d="M484 136 a6 6 0 0 1 10 0"/>
+  <line x1="560" y1="150" x2="560" y2="215"/><rect x="548" y="215" width="24" height="34"/><line x1="560" y1="249" x2="560" y2="275"/>
+  <line x1="546" y1="275" x2="574" y2="275"/><line x1="551" y1="281" x2="569" y2="281"/><line x1="556" y1="287" x2="564" y2="287"/>
+  <line x1="560" y1="150" x2="720" y2="150"/><rect x="720" y="105" width="190" height="90"/>
+  <line x1="455" y1="275" x2="546" y2="275" stroke-dasharray="5 4"/>
+ </g>
+ <g stroke="var(--ink)" stroke-width="1.6">${ticks(260,150)}${ticks(640,150)}</g>
+ <g fill="var(--ink)">
+  <text x="60" y="28" text-anchor="middle" font-weight="600">REDE ${esc(NORMAS[r.conc].curto.toUpperCase())}</text>
+  <text x="70" y="318">${r.Vfn}/${r.Vff} V</text>
+  <text x="130" y="140" text-anchor="middle">ramal de conexão</text><text x="130" y="170" text-anchor="middle" fill="var(--muted)">(concessionária)</text>
+  <text x="200" y="196" text-anchor="middle">ponto de</text><text x="200" y="210" text-anchor="middle">conexão</text>
+  <text x="265" y="125" text-anchor="middle">${n}#${S} + N${SN} mm²</text>
+  <text x="265" y="178" text-anchor="middle" fill="var(--muted)">ramal de entrada ${fmt(+p.distRamal||0,0)} m</text>
+  <text x="265" y="192" text-anchor="middle" fill="var(--muted)">eletroduto ${r.elet} mm</text>
+  <text x="365" y="155" text-anchor="middle" font-weight="600">kWh</text><text x="365" y="200" text-anchor="middle">medição ${r.row.med.toLowerCase()}</text>
+  <text x="490" y="118" text-anchor="middle" font-weight="600">${r.disj} A</text><text x="490" y="176" text-anchor="middle">disjuntor geral</text>
+  <text x="590" y="236">DPS classe II</text><text x="590" y="250" fill="var(--muted)">${r.Vfn===127?"175 V":"275 V"}</text>
+  <text x="400" y="300">haste NBR 13571 · condutor ${fmt(r.Sat,0)} mm²</text>
+  <text x="645" y="125" text-anchor="middle">${n}#${S}+N${SN}+PE${SPE}</text>
+  <text x="645" y="178" text-anchor="middle" fill="var(--muted)">alimentador ${fmt(+p.distAlim||0,0)} m</text>
+  <text x="815" y="140" text-anchor="middle" font-weight="600">QUADRO GERAL</text>
+  <text x="815" y="160" text-anchor="middle">D = ${fmt(r.D)} kVA</text>
+  <text x="815" y="178" text-anchor="middle">CI = ${fmt(r.CI)} kW</text>
+  <text x="815" y="230" text-anchor="middle" fill="var(--muted)">${esc(r.tipoF)}</text>
+  <text x="815" y="246" text-anchor="middle" fill="var(--muted)">${r.conc==="enel"?"tipo":"categoria"} ${esc(r.cat)}</text>
+  <text x="940" y="348" text-anchor="end" fill="var(--muted)" font-size="10">${esc(p.nome)} · sem escala</text>
+ </g></svg>`}
+function memorialHTML(p,r){const rt=S.config.rt,N=NORMAS[r.conc],R=r.row,enel=r.conc==="enel";const hoje=new Date().toLocaleDateString("pt-BR");
+ const cargas=p.cargas.map(c=>`<tr><td>${esc(c.d)}</td><td>${esc((TIPOS[c.t]||TIPOS.outros).par)}</td><td class="n">${esc(c.q)}</td><td class="n">${fmt(+c.p||0,0)}</td><td class="n">${fmt(+c.fp||1)}</td><td class="n">${fmt((+c.q||0)*(+c.p||0)/1000)}</td></tr>`).join("");
+ const parc=Object.entries(r.P).filter(([k,x])=>x.v>0).map(([k,x])=>`${k} (${esc(Object.values(TIPOS).find(v=>v.par===k).n.toLowerCase())}) = ${fmt(x.v)} kVA – ${esc(x.crit)}`).join("<br>");
+ return`<h2>MEMORIAL DESCRITIVO</h2><p style="text-align:center">Padrão de entrada de energia elétrica em baixa tensão – conexão individual</p>
+ <h4>1. Identificação</h4>
+ <p><b>Titular:</b> ${esc(p.cliente)||"________"}<br><b>Endereço:</b> ${esc(p.endereco)||"________"} – ${esc(p.municipio)||"____"}/SP ${p.cep?"– CEP "+esc(p.cep):""}<br>
+ <b>Nº da instalação:</b> ${esc(p.instalacao)||"a ser atribuído"}<br><b>Distribuidora:</b> ${esc(N.nome)}<br><b>Finalidade:</b> ${esc(p.finalidade)} · <b>Classe:</b> ${esc(p.uso)}</p>
+ <h4>2. Objetivo</h4><p>Descrever o dimensionamento do padrão de entrada de energia elétrica da unidade consumidora acima, para ${esc(p.finalidade.toLowerCase())} junto à ${esc(N.nome)}.</p>
+ <h4>3. Normas e regulamentos</h4><p>${esc(N.ref)}; ${enel?"CPFL GED 13, v. 46.0, item 6.22.1 (método de cálculo da demanda adotado pelo responsável técnico); ":""}ABNT NBR 5410 – Instalações elétricas de baixa tensão; ABNT NBR 13571 – Haste de aterramento aço-cobreada; Resolução Normativa ANEEL nº 1.000/2021; NR-10.</p>
+ <h4>4. Características do fornecimento</h4><p>Tensão nominal ${r.Vfn}/${r.Vff} V, 60 Hz, rede ${esc(p.entrada.toLowerCase())}. Atendimento ${esc(r.tipoF.toLowerCase())}, ${enel?"tipo de fornecimento":"categoria"} <b>${esc(R.cat)}</b>, medição ${R.med.toLowerCase()}.</p>
+ <h4>5. Quadro de cargas</h4><table><thead><tr><th>Descrição</th><th>Parcela</th><th class="n">Qtd</th><th class="n">W unit.</th><th class="n">FP</th><th class="n">kW</th></tr></thead><tbody>${cargas}</tbody>
+ <tfoot><tr><th colspan="5">Carga instalada total</th><th class="n">${fmt(r.CI)}</th></tr></tfoot></table>
+ <h4>6. Cálculo da demanda</h4><p>Método da GED 13, item 6.22.1: D = a + b + c + d + e + f + g + h + i.<br>${parc||"—"}<br><b>D = ${fmt(r.D)} kVA</b> · corrente de demanda = ${fmt(r.IB,1)} A</p>
+ <h4>7. Dimensionamento</h4><p><b>Enquadramento:</b> ${enel?`ET 0017, Tabela 2 e Anexo B: tipo ${esc(R.cat)}, com corrente de demanda (${fmt(r.IB,1)} A) ≤ disjuntor (${R.disj} A).`:(R.sel==="ci"?`GED 13, Tabela 1: categoria ${esc(R.cat)} pela carga instalada (até ${R.max} kW).`:`GED 13, Tabela 1C: categoria ${esc(R.cat)} pela demanda (até ${R.max} kVA).`)}<br>
+ <b>Proteção geral:</b> disjuntor termomagnético ${R.disj} A, capacidade de interrupção ${esc(r.icc)}.<br>
+ ${enel?`<b>Ramal de conexão (distribuidora):</b> ${esc(R.rc)} mm², ponto de conexão no ${R.pc.toLowerCase()}.<br>`:""}
+ <b>Ramal de entrada:</b> ${r.fases} × ${mm(r.S)} (fases) + ${mm(r.SN)} (neutro), cobre; condutor de proteção ${mm(r.SPE)}.<br>
+ <b>Eletroduto:</b> ${R.elet} mm (${DN_POL[R.elet]||""}).<br>
+ <b>Queda de tensão</b> (ramal de entrada + alimentador, ${fmt(r.L,1)} m): ${fmt(r.dvPct)} %.<br>
+ <b>Aterramento:</b> condutor ${mm(r.Sat)} cobre, haste aço-cobreada conforme NBR 13571, neutro aterrado na entrada.<br>
+ <b>Poste:</b> ${esc(R.poste)}.<br>
+ <b>Proteção contra surtos:</b> DPS ${esc(r.dps)}.</p>
+ <h4>8. Observações</h4><p>Caixa de medição, poste, armação secundária, isoladores e conectores seguirão os padrões homologados pela distribuidora. ${esc(p.obs)}</p>
+ <p style="margin-top:36px">${esc(p.municipio)||"________"}, ${hoje}.</p>
+ <p style="margin-top:40px">______________________________________<br>${esc(rt.nome)||"Responsável técnico"}<br>${esc(rt.registro)||"CREA / CFT nº ______"}${p.art?` · ART/TRT nº ${esc(p.art)}`:""}${rt.empresa?`<br>${esc(rt.empresa)}`:""}${rt.telefone?` · ${esc(rt.telefone)}`:""}</p>`}
+function memorialDe(p){return p.tipo==="coletivo"?memorialColetivo(p,calcColetivo(p,S.config)):memorialHTML(p,calc(p,S.config))}
+function viewMemorial(p,r){return`<div class="card"><h3>Memorial descritivo</h3>
+ ${!S.config.rt.nome?`<div class="alert">Preencha o responsável técnico na aba <b>Normas e RT</b> para que o nome e o registro apareçam na assinatura.</div>`:""}
+ <div class="row" style="margin-bottom:12px"><button class="btn pri" data-act="dl-doc">Baixar para Word (.doc)</button><button class="btn" data-act="dl-html">Baixar HTML</button><button class="btn" data-act="copiar">Copiar texto</button></div>
+ <div class="memo" id="memo">${memorialDe(p)}</div></div>`}
+function viewTabelas(){const c=S.config,p=cur();let hl=null;if(p){try{hl=calc(p,c).cat+"|"+p.conc}catch(e){}}
+ const cpflT=t=>`<div class="tw"><table><thead><tr><th>Cat.</th><th>Faixa</th><th class="n">Disj. (A)</th><th class="n">Cu (mm²)</th><th class="n">Al (mm²)</th><th class="n">Eletroduto</th><th class="n">Aterr. (mm²)</th><th>Poste</th><th>Medição</th></tr></thead><tbody>
+  ${CPFL[t].map(r=>`<tr class="${hl===r.cat+"|cpfl"?"hl":""}"><td>${r.cat}</td><td>${r.sel==="ci"?"CI ≤ "+r.max+" kW":"D ≤ "+r.max+" kVA"}</td><td class="n">${r.disj}</td><td class="n">${r.cu}</td><td class="n">${r.al}</td><td class="n">${r.elet} mm</td><td class="n">${r.at}</td><td>${r.poste}</td><td>${r.med}</td></tr>`).join("")}</tbody></table></div>`;
+ return`<div class="card"><h3>Responsável técnico <small>aparece na assinatura do memorial</small></h3><div class="grid">
+  <label class="f">Nome<input id="rt_nome" data-rt="nome" value="${esc(c.rt.nome)}"></label>
+  <label class="f">CREA / CFT nº<input id="rt_reg" data-rt="registro" value="${esc(c.rt.registro)}"></label>
+  <label class="f">Empresa<input id="rt_emp" data-rt="empresa" value="${esc(c.rt.empresa)}"></label>
+  <label class="f">Telefone<input id="rt_tel" data-rt="telefone" value="${esc(c.rt.telefone)}"></label>
+  <label class="f">Queda de tensão máxima adotada, entrada + alimentador (%)<input id="cfg_dv" data-cfg="dvMax" type="number" step="0.1" min="0.5" value="${c.dvMax}"></label></div></div>
+ <div class="card"><h3>CPFL – GED 13, Tabela 1 <small>127/220 V</small></h3><p class="src">${esc(NORMAS.cpfl.ref)}</p>${cpflT("127/220")}
+  <h3 style="margin-top:16px">CPFL – GED 13, Tabela 1 <small>220/380 V</small></h3>${cpflT("220/380")}
+  <p class="note">Mono e bifásico (A e B) são enquadrados pela carga instalada até 25 kW; trifásico (C) pela demanda. Acima de 38 kVA (127/220 V) ou 66 kVA (220/380 V): medição indireta e Documento de Responsabilidade Técnica.</p></div>
+ <div class="card"><h3>Enel SP – ET 0017, Anexo B <small>rede aérea 127/220 V</small></h3><p class="src">${esc(NORMAS.enel.ref)}</p>
+  <p class="note">Tabela 2 (127/220 V estrela): tipo A até 12 kW, tipo B de 12 a 20 kW, tipo C de 20 a 75 kW de carga instalada. Com equipamento trifásico, o atendimento é tipo C.</p>
+  <div class="tw"><table><thead><tr><th>Tipo</th><th class="n">Disj. (A)</th><th>Ramal de conexão</th><th class="n">Entrada (mm²)</th><th class="n">Aterr. (mm²)</th><th class="n">Eletroduto PVC</th><th>Poste</th><th>Medição</th></tr></thead><tbody>
+  ${ENEL.map(r=>`<tr class="${hl===r.cat+"|enel"?"hl":""}"><td>${r.cat}${r.consulta?"*":""}</td><td class="n">${r.disj}</td><td>${r.rc}</td><td class="n">${r.cu}</td><td class="n">${r.at}</td><td class="n">${r.elet} mm</td><td>${r.poste}</td><td>${r.med}</td></tr>`).join("")}</tbody></table></div>
+  <p class="note">* Sujeito a consulta de viabilidade técnica. Valores mínimos (nota 12).</p></div>
+ <div class="card"><h3>Edifícios coletivos</h3>
+  <p class="src">${esc(GED119_REF)}</p><p class="src">${esc(ET0018_REF)}</p>
+  <p class="note">Demanda pelo item 6.11 da GED-119 nas duas concessionárias (a ET 0018 deixa o método ao responsável técnico, 7.8.4).</p>
+  <div class="grid">
+  <div class="tw"><table><thead><tr><th>Enel – Tabela 17 (220 V)</th><th>Ramal de conexão aéreo</th></tr></thead><tbody>${ET0018_T17.map(r=>`<tr><td>${r[0]} kVA</td><td>${esc(r[1])}</td></tr>`).join("")}</tbody></table></div>
+  <div class="tw"><table><thead><tr><th>Enel – Tabela 23 (barra mm)</th><th class="n">Pintada (A)</th><th class="n">Nua (A)</th></tr></thead><tbody>${ET0018_T23.map(b=>`<tr><td>${b[0]}</td><td class="n">${b[1]}</td><td class="n">${b[2]}</td></tr>`).join("")}</tbody></table></div>
+  <div class="tw"><table><thead><tr><th>Enel – Tabela 12 (A)</th><th>Ramal subterrâneo</th><th>Caixa</th></tr></thead><tbody>${ET0018_T12.map((r,i)=>`<tr><td>${i?ET0018_T12[i-1][0]+1+" a ":"até "}${r[0]}</td><td>${esc(r[3])}</td><td>${esc(r[1])}</td></tr>`).join("")}</tbody></table></div>
+  </div></div>
+ <div class="card"><h3>Fatores de demanda <small>GED 13, Tabelas 3, 4, 6, 9 e 10</small></h3><div class="grid">
+  <div class="tw"><table><thead><tr><th>Ilum./TUG (kW)</th><th class="n">FD</th></tr></thead><tbody>${T3.map((r,i)=>`<tr><td>${i===T3.length-1?"> 10":(i)+" a "+r[0]}</td><td class="n">${fmt(r[1])}</td></tr>`).join("")}</tbody></table></div>
+  <div class="tw"><table><thead><tr><th>Chuveiros etc. (nº)</th><th class="n">FD</th></tr></thead><tbody>${[1,2,3,4,5,6,7,8,9,10,12,15,20,25].map(n=>`<tr><td>${n===25?"25 ou mais":n}</td><td class="n">${fmt(fdT4(n))}</td></tr>`).join("")}</tbody></table></div>
+  <div class="tw"><table><thead><tr><th>Forno, micro-ondas etc.</th><th class="n">FD</th></tr></thead><tbody><tr><td>1</td><td class="n">1,00</td></tr><tr><td>2 a 4</td><td class="n">0,70</td></tr><tr><td>5 a 6</td><td class="n">0,60</td></tr><tr><td>7 ou mais</td><td class="n">0,50</td></tr></tbody></table>
+   <table style="margin-top:10px"><thead><tr><th>Motores (ordem)</th><th class="n">FD</th></tr></thead><tbody><tr><td>1º maior</td><td class="n">1,00</td></tr><tr><td>2º maior</td><td class="n">0,90</td></tr><tr><td>3º a 5º</td><td class="n">0,80</td></tr><tr><td>demais</td><td class="n">0,70</td></tr></tbody></table></div>
+ </div></div>`}
+
+/* ===================== Eventos ===================== */
+// Seletores (select) e caixas de marcar só aplicam na confirmação ("change"), para a lista não fechar nem perder a escolha
+// enquanto o usuário navega; depois de redesenhar, o foco volta para o mesmo campo.
+const isPick=t=>t.tagName==="SELECT"||t.type==="checkbox"||t.type==="date";
+const isEditField=t=>t.dataset&&(t.dataset.k||t.dataset.ep||t.dataset.ci!==undefined||t.dataset.cfg||t.dataset.rt);
+function keepFocus(id){if(!id)return;const el=document.getElementById(id);if(el&&document.activeElement!==el){try{el.focus({preventScroll:true})}catch(e){el.focus()}}}
+document.addEventListener("input",e=>{if(isPick(e.target)&&isEditField(e.target))return;onEdit(e)});
+function flushSaves(){for(const id of Object.keys(saveTimers)){clearTimeout(saveTimers[id]);delete saveTimers[id];const p=S.projects.find(q=>q.id===id);if(p)persist(p)}}
+document.addEventListener("change",e=>{if(isPick(e.target)&&isEditField(e.target)){const id=e.target.id;const y=window.scrollY;onEdit(e);flushSaves();keepFocus(id);window.scrollTo(0,y)}});
+window.addEventListener("pagehide",flushSaves);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")flushSaves()});
+function onEdit(e){const t=e.target;
+ if(t.id==="busca"){renderSide();return}
+ const p=cur();
+ if(t.dataset.k&&p){const k=t.dataset.k;p[k]=t.type==="checkbox"?t.checked:t.type==="number"?(t.value===""?"":+t.value):t.value;
+   if(k==="conc"&&!NORMAS[p.conc].tensoes.includes(p.tensao))p.tensao=NORMAS[p.conc].tensoes[0];
+   touch(p);if(t.tagName==="SELECT"||t.type==="date"||t.type==="checkbox"){renderSide();renderMain()}else if(k==="nome")renderSide();return}
+ if(t.dataset.ci!==undefined&&p){const c=p.cargas[+t.dataset.ci];const f=t.dataset.cf;c[f]=(f==="d"||f==="t")?t.value:(t.value===""?"":+t.value);touch(p);if(f==="t")renderMain();else refreshCalc();return}
+ if(t.dataset.ep&&p){const v=t.type==="checkbox"?t.checked:t.type==="number"?(t.value===""?"":+t.value):t.value;edSet(p,t.dataset.ep,v);
+   if(/\.f$/.test(t.dataset.ep)){const m=edPath(p,t.dataset.ep.replace(/\.f$/,""));const T=+m.f===1?G119_T5:G119_T4;if(!T[m.cv])m.cv="1"}
+   touch(p);if(t.tagName==="SELECT"||t.type==="checkbox")renderMain();else refreshCalc();return}
+ if(t.dataset.cfg){S.config[t.dataset.cfg]=+t.value||defaultConfig()[t.dataset.cfg];touchCfg();return}
+ if(t.dataset.rt){S.config.rt[t.dataset.rt]=t.value;touchCfg();return}
+}
+function refreshCalc(){const a=document.activeElement,id=a&&a.id,ss=a&&a.selectionStart;
+ renderMain();if(id){const el=document.getElementById(id);if(el){el.focus();try{el.setSelectionRange(ss,ss)}catch(e){}}}}
+document.addEventListener("change",e=>{const t=e.target;
+ if(t.id==="filtroStatus"){renderSide();return}
+ if(t.id==="exemplos"&&t.value){const v=t.value;t.value="";abrirExemplo(v);return}
+ if(t.dataset.preset&&t.value!==""){const p=cur();const x=ED_PRESETS[+t.value];edPath(p,t.dataset.preset).push({d:x[0],t:x[1],q:x[2],p:x[3],fp:x[4]});touch(p);renderMain();return}
+ if(t.id==="preset"&&t.value!==""){const p=cur();const x=PRESETS[+t.value];p.cargas.push({d:x[0],t:x[1],q:x[2],p:x[3],fp:x[4]});touch(p);renderMain();return}
+ if(t.id==="impFile"&&t.files[0]){const fr=new FileReader();fr.onload=async()=>{try{const o=JSON.parse(fr.result);const ps=(o.projects||[]).filter(p=>p&&p.kind==="projeto"&&p.id);
+   for(const p of ps){const i=S.projects.findIndex(q=>q.id===p.id);if(i>=0)S.projects[i]=p;else S.projects.push(p);await persist(p)}
+   if(o.config){S.config=mergeCfg(o.config);touchCfg()}render();toast(`${ps.length} projeto(s) importado(s)`)}catch(err){toast("Arquivo inválido: use um backup exportado por este app.")}t.value=""};fr.readAsText(t.files[0])}
+});
+document.addEventListener("click",async e=>{const b=e.target.closest("button,[data-act]");if(!b)return;
+ if(b.dataset.id){S.cur=b.dataset.id;S.confirmDel=false;if(S.tab==="tabelas")S.tab="dados";render();return}
+ if(b.dataset.tab){S.tab=b.dataset.tab;S.confirmDel=false;renderMain();return}
+ if(b.dataset.rm!==undefined){const p=cur();p.cargas.splice(+b.dataset.rm,1);touch(p);renderMain();return}
+ const a=b.dataset.act||b.id;const p=cur();
+ if(a==="btnNovo"||a==="novo"){const n=novoProjeto();S.projects.push(n);S.cur=n.id;S.tab="dados";persist(n);render();setTimeout(()=>{const el=$("#f_nome");el&&el.select()},0)}
+ else if(b.dataset.ex){abrirExemplo(b.dataset.ex)}
+ else if(a==="tabs-tabelas"){S.tab="tabelas";renderMain()}
+ else if(a==="addcarga"){p.cargas.push({d:"",t:"outros",q:1,p:0,fp:1});touch(p);renderMain()}
+ else if(a==="duplicar"){const n=JSON.parse(JSON.stringify(p));n.id=uid();n.nome=p.nome+" (cópia)";n.status="rascunho";n.protocolo="";n.dataProtocolo="";n.criadoEm=n.atualizadoEm=new Date().toISOString();S.projects.push(n);S.cur=n.id;persist(n);render();toast("Projeto duplicado")}
+ else if(a==="del"){S.confirmDel=true;renderMain()}
+ else if(a==="delno"){S.confirmDel=false;renderMain()}
+ else if(a==="delok"){const id=p.id;S.projects=S.projects.filter(q=>q.id!==id);S.cur=null;S.confirmDel=false;clearTimeout(saveTimers[id]);delete saveTimers[id];try{await store.del(id)}catch(err){}render();toast("Projeto excluído")}
+ else if(a==="copiar"){const txt=$("#memo").innerText;try{await navigator.clipboard.writeText(txt);toast("Memorial copiado")}catch(err){const rg=document.createRange();rg.selectNodeContents($("#memo"));const s=getSelection();s.removeAllRanges();s.addRange(rg);toast("Texto selecionado: use Ctrl+C")}}
+ else if(a==="ed-add"){edPath(p,b.dataset.path).push({d:"",t:"outros",q:1,p:0,fp:1});touch(p);renderMain()}
+ else if(a==="ed-rm"){edPath(p,b.dataset.path).splice(+b.dataset.i,1);touch(p);renderMain()}
+ else if(a==="ed-addgrupo"){p.ed.grupos.push({nome:"Tipo "+(p.ed.grupos.length+1),qtd:1,area:50,res:true,cargas:[]});touch(p);renderMain()}
+ else if(a==="ed-rmgrupo"){p.ed.grupos.splice(+b.dataset.i,1);touch(p);renderMain()}
+ else if(a==="ed-addmotor"){(p.ed.adm.motores=p.ed.adm.motores||[]).push({d:"Motor",cv:"1",f:3,q:1});touch(p);renderMain()}
+ else if(a==="dl-doc"||a==="dl-html"){const body=memorialDe(p);
+   const doc=`<html><head><meta charset="utf-8"><title>Memorial – ${esc(p.nome)}</title><style>body{font-family:Arial,sans-serif;font-size:11pt;line-height:1.45;max-width:800px;margin:auto}h2{text-align:center}h4{border-bottom:1px solid #999;margin-top:18pt}table{border-collapse:collapse;width:100%}th,td{border:1px solid #999;padding:3pt 5pt;font-size:10pt}.n{text-align:right}</style></head><body>${body}</body></html>`;
+   await baixar(`Memorial - ${p.nome}.${a==="dl-doc"?"doc":"html"}`,a==="dl-doc"?new Blob(["﻿"+doc],{type:"application/msword"}):doc)}
+ else if(a==="dl-svg"){const svg=(p.tipo==="coletivo"?svgColetivo(p,calcColetivo(p,S.config)):svgUnifilar(p,calc(p,S.config))).replace(/var\(--paper\)/g,"#ffffff").replace(/var\(--ink\)/g,"#13233B").replace(/var\(--muted\)/g,"#5B6B80");await baixar(`Unifilar - ${p.nome}.svg`,svg)}
+ else if(a==="btnBackup"){await baixar(`backup-entrada-bt-${new Date().toISOString().slice(0,10)}.json`,JSON.stringify({app:"entrada-bt",versao:2,config:S.config,projects:S.projects},null,1))}
+});
+let dl=null;
+async function baixar(nome,data){nome=nome.replace(/[\\/:*?"<>|]/g,"-");
+ if(dl===null){try{dl=window.claude&&window.claude.use?await window.claude.use("downloads"):false}catch(e){dl=false}}
+ if(!dl){
+   // fora do claude.ai (arquivo aberto direto no navegador): download comum do navegador
+   if(!window.claude){try{const blob=data instanceof Blob?data:new Blob([data],{type:/\.svg$/.test(nome)?"image/svg+xml":/\.json$/.test(nome)?"application/json":"text/html;charset=utf-8"});
+     const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=nome;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);toast("Arquivo baixado: "+nome)}catch(e){toast("Não foi possível baixar o arquivo.")}return}
+   toast("Download indisponível nesta visualização.");return}
+ try{await dl.save({filename:nome,data});toast("Arquivo salvo")}catch(e){if(e&&e.code!=="declined")toast("Não foi possível baixar o arquivo.")}}
+
+$("#filtroStatus").innerHTML+=STATUS.map(s=>`<option value="${s[0]}">${s[1]}</option>`).join("");
+render();initStore();

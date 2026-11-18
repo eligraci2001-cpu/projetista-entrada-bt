@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Projetista Entrada BT</title>
+<meta name="description" content="Dimensionamento de padrão de entrada de energia em baixa tensão – Enel SP (ET 0017/0018) e CPFL (GED 13/119).">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect x="1" y="1" width="32" height="32" rx="6" fill="var(--ink)"/><path d="M19 5 10 19h6l-2 10 9-14h-6z" fill="var(--bg)"/></svg>
+      <div><h1>Projetista Entrada BT</h1><p>Padrão de entrada em baixa tensão · casas e edifícios · Enel SP (ET 0017/0018) e CPFL (GED 13/119)</p></div>
+    </div>
+    <div class="store-note" id="storeNote">conectando…</div>
+  </header>
+
+  <div class="layout">
+    <aside class="side">
+      <h2>Projetos</h2>
+      <div class="row"><button class="btn pri" id="btnNovo">+ Novo projeto</button>
+        <select id="exemplos" aria-label="Abrir um projeto de exemplo" style="width:auto;flex:1"><option value="">Abrir exemplo…</option><option value="casa-enel">Casa – Enel SP</option><option value="ed-enel">Edifício – Enel SP</option><option value="casa-cpfl">Casa – CPFL</option><option value="ed-cpfl">Edifício – CPFL</option></select></div>
+      <input id="busca" placeholder="Buscar cliente, endereço, protocolo…" aria-label="Buscar projetos">
+      <select id="filtroStatus" aria-label="Filtrar por status"><option value="">Todos os status</option></select>
+      <div class="plist" id="plist"></div>
+      <div class="row" style="border-top:1px solid var(--line);padding-top:10px">
+        <button class="btn sm" id="btnBackup">Exportar backup</button>
+        <label class="btn sm" for="impFile">Importar backup</label>
+        <input type="file" id="impFile" accept="application/json,.json" hidden>
+      </div>
+    </aside>
+    <main id="main"></main>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+<script src="assets/app.js"></script>
+</body>
+</html>
