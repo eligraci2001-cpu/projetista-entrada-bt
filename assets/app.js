@@ -1,4 +1,3 @@
-
 /* ===================== Normas ===================== */
 const NORMAS={
  cpfl:{nome:"CPFL Paulista / Piratininga / Santa Cruz",curto:"CPFL",
@@ -238,7 +237,14 @@ function exemploEdificioEnel(){return novoProjeto({tipo:"coletivo",nome:"EXEMPLO
    grupos:[{nome:"Apartamento tipo (2 dormitórios)",qtd:24,area:65,res:true,cargas:[{d:"Iluminação",t:"ilum",q:1,p:700,fp:1},{d:"Tomadas",t:"ilum",q:1,p:2600,fp:1},{d:"Chuveiro elétrico 6.500 W",t:"chuveiro",q:1,p:6500,fp:1},{d:"Forno micro-ondas 1.500 W",t:"fogao",q:1,p:1500,fp:1}]}],
    adm:{cargas:[{d:"Iluminação de áreas comuns",t:"ilum",q:1,p:3000,fp:1},{d:"Chuveiros (vestiário)",t:"chuveiro",q:2,p:6500,fp:1}],
     motores:[{d:"Elevador",cv:"10",f:3,q:1},{d:"Bombas de recalque",cv:"3",f:3,q:2},{d:"Portão",cv:"1/2",f:3,q:1}]}}})}
-function abrirExemplo(k){const n=k==="casa-enel"?exemploCasaEnel():k==="ed-enel"?exemploEdificioEnel():k==="ed-cpfl"?exemploEdificio():exemplo();S.projects.push(n);S.cur=n.id;S.tab="dim";S.confirmDel=false;persist(n);render();toast("Exemplo aberto: "+n.nome.replace("EXEMPLO ",""))}
+function exemploComercialEnel(){return novoProjeto({tipo:"coletivo",nome:"EXEMPLO Enel – Edifício comercial (escritórios e lojas)",cliente:"Condomínio Comercial Exemplo",endereco:"Av. Exemplo, 1.200",municipio:"São Paulo",conc:"enel",tensao:"127/220",uso:"Comercial",distRamal:20,
+  ed:{uso:"Comercial",areaAdm:600,metodo:0,atividade:1,barraPintada:0,
+   grupos:[
+    {nome:"Sala de escritório (40 m²)",qtd:30,area:40,res:false,cargas:[{d:"Iluminação LED",t:"ilum",q:1,p:600,fp:1},{d:"Tomadas",t:"ilum",q:1,p:1500,fp:1},{d:"Ar-condicionado 12.000 BTU/h (1.600 W)",t:"ar",q:1,p:1600,fp:.84},{d:"Forno micro-ondas 1.500 W",t:"fogao",q:1,p:1500,fp:1}]},
+    {nome:"Loja térrea (120 m²)",qtd:4,area:120,res:false,cargas:[{d:"Iluminação de loja",t:"ilum",q:1,p:2400,fp:1},{d:"Tomadas",t:"ilum",q:1,p:3000,fp:1},{d:"Ar-condicionado 18.000 BTU/h (2.600 W)",t:"ar",q:2,p:2600,fp:.91}]}],
+   adm:{cargas:[{d:"Iluminação de áreas comuns e garagem",t:"ilum",q:1,p:4000,fp:1},{d:"Tomadas de áreas comuns",t:"ilum",q:1,p:1500,fp:1}],
+    motores:[{d:"Elevadores",cv:"10",f:3,q:2},{d:"Bombas de recalque",cv:"3",f:3,q:2},{d:"Portão da garagem",cv:"1/2",f:3,q:1}]}}})}
+function abrirExemplo(k){const n=k==="casa-enel"?exemploCasaEnel():k==="ed-enel"?exemploEdificioEnel():k==="com-enel"?exemploComercialEnel():k==="ed-cpfl"?exemploEdificio():exemplo();S.projects.push(n);S.cur=n.id;S.tab="dim";S.confirmDel=false;persist(n);render();toast("Exemplo aberto: "+n.nome.replace("EXEMPLO ",""))}
 const lookup=(T,n)=>T.find(r=>n<=r[0]);
 function fdT1(kw,idx){const a=G119_T1[idx]||G119_T1[0];return kw<=a[1]?kw*a[2]:a[1]*a[2]+(kw-a[1])*a[3]}
 function motorKVA(m){const T=+m.f===1?G119_T5:G119_T4;const v=T[m.cv]||[0,0];return v}
@@ -254,10 +260,16 @@ function calcColetivo(p,cfg){
   const fdOf=t=>{const col=ED_TIPOS[t].col;const n=cnt[t]||0;if(typeof col==="number")return lookup(G119_T2,Math.max(n,1))[col]/100;if(col==="ar")return lookup(G119_T6,Math.max(n,1))[res?2:1]/100;return 1};
   // D1 – iluminação e tomadas
   const D1={apt:0,adm:0};const CIg=[];
+  // residencial: área útil × 5 W/m²; não residencial: Tabela 1 aplicada sobre o TOTAL declarado da entrada
+  // (unidades não residenciais + administração de prédio não residencial), repartido proporcionalmente
+  let comAptKW=0;
   ed.grupos.forEach(g=>{const Q=Math.max(0,Math.round(+g.qtd||0));const ilumW=(g.cargas||[]).filter(c=>c.t==="ilum").reduce((s,c)=>s+(+c.q||0)*(+c.p||0),0);
-    if(isRes(g))D1.apt+=Q*(+g.area||0)*5/1000;else D1.apt+=fdT1(Q*ilumW/1000,+ed.atividade||0)});
+    if(isRes(g))D1.apt+=Q*(+g.area||0)*5/1000;else comAptKW+=Q*ilumW/1000});
   const admIlumKW=(ed.adm.cargas||[]).filter(c=>c.t==="ilum").reduce((s,c)=>s+(+c.q||0)*(+c.p||0),0)/1000;
-  D1.adm=res?(+ed.areaAdm||0)*5/1000:fdT1(admIlumKW,+ed.atividade||0);
+  const comAdmKW=res?0:admIlumKW,comTot=comAptKW+comAdmKW,comD=fdT1(comTot,+ed.atividade||0);
+  D1.apt+=comTot?comD*comAptKW/comTot:0;
+  D1.adm=res?(+ed.areaAdm||0)*5/1000:(comTot?comD*comAdmKW/comTot:0);
+  D1.comTot=comTot;D1.comD=comD;
   // D2 – aparelhos
   const D2={apt:0,adm:0};const D2col={};const esp=[];
   each((c,Q,side)=>{const t=ED_TIPOS[c.t]?c.t:"outros";if(t==="ilum")return;const q=Math.max(0,Math.round(+c.q||0)),w=Math.max(0,+c.p||0),fp=Math.min(1,Math.max(.1,+c.fp||1));
@@ -371,7 +383,7 @@ function viewEdificio(p,r){const ed=p.ed;
 function viewDemandaCol(r){const cols=Object.keys(ED_TIPOS).filter(k=>k!=="ilum"&&(r.cnt[k]||0)>0);
  return`<div class="card"><h3>Demanda geral da entrada <small>GED-119, 6.11.3 a 6.11.8</small></h3>
  <div class="tw"><table><thead><tr><th>Parcela</th><th>Critério</th><th class="n">Unidades (kVA)</th><th class="n">Administração (kVA)</th></tr></thead><tbody>
-  <tr><td>D1 – Iluminação e tomadas</td><td>${r.res?"área útil × 5 W/m², FP 1":"carga declarada × Tabela 1"}</td><td class="n">${fmt(r.D1.apt)}</td><td class="n">${fmt(r.D1.adm)}</td></tr>
+  <tr><td>D1 – Iluminação e tomadas</td><td>${r.res?"área útil × 5 W/m², FP 1":`Tabela 1 (${esc(G119_T1[+(cur()?.ed?.atividade)||0][0])}) sobre o total declarado de ${fmt(r.D1.comTot)} kW → ${fmt(r.D1.comD)} kVA`}</td><td class="n">${fmt(r.D1.apt)}</td><td class="n">${fmt(r.D1.adm)}</td></tr>
   ${cols.map(k=>`<tr><td>D2 – ${esc(ED_TIPOS[k].n)}</td><td>${typeof ED_TIPOS[k].col==="number"?`Tabela 2: ${r.cnt[k]} aparelhos → FD ${fmt(r.fdOf(k))}`:ED_TIPOS[k].col==="ar"?`Tabela 6: ${r.cnt[k]} aparelhos → FD ${fmt(r.fdOf(k))}`:ED_TIPOS[k].col==="esp"?"maior 100%, demais 60% (6.11.7)":"FD 1"}</td><td class="n" colspan="2">${fmt(r.D2col[k]||0)}</td></tr>`).join("")}
   <tr><td>D2 – subtotal aparelhos</td><td></td><td class="n">${fmt(r.D2.apt)}</td><td class="n">${fmt(r.D2.adm)}</td></tr>
   <tr><td>D3 – Motores</td><td>Tabelas 4/5: maior ${fmt(r.mots[0]||0)} kVA a 100%, demais ${fmt(r.motTot-(r.mots[0]||0))} kVA a 50%</td><td class="n">—</td><td class="n">${fmt(r.D3)}</td></tr>
@@ -432,7 +444,7 @@ function memorialColetivo(p,r){const rt=S.config.rt;const hoje=new Date().toLoca
   ${ed.grupos.map((g,i)=>`<tr><td>${esc(g.nome)}</td><td class="n">${r.unidades[i].qtd}</td><td class="n">${fmt(+g.area||0,1)}</td><td class="n">${fmt(r.unidades[i].CI)}</td><td>${esc(r.unidades[i].cat)} – ${r.unidades[i].disj} A</td></tr>`).join("")}
   ${r.admR?`<tr><td>Administração</td><td class="n">1</td><td class="n">${fmt(+ed.areaAdm||0,1)}</td><td class="n">${fmt(r.admR.CI)}</td><td>${esc(r.admR.cat)} – ${r.admR.disj} A</td></tr>`:""}</tbody></table>
  <h4>4. Cálculo da demanda geral da entrada (GED-119, item 6.11)</h4>
- <p><b>D1 – Iluminação e tomadas:</b> ${r.res?`unidades ${fmt(r.D1.apt)} kVA (área útil × 5 W/m²); administração ${fmt(+ed.areaAdm||0,1)} m² × 5 W/m² = ${fmt(r.D1.adm)} kVA.`:`unidades ${fmt(r.D1.apt)} kVA; administração ${fmt(r.D1.adm)} kVA (Tabela 1: ${esc(G119_T1[+ed.atividade||0][0])}).`}<br>
+ <p><b>D1 – Iluminação e tomadas:</b> ${r.res?`unidades ${fmt(r.D1.apt)} kVA (área útil × 5 W/m²); administração ${fmt(+ed.areaAdm||0,1)} m² × 5 W/m² = ${fmt(r.D1.adm)} kVA.`:`carga declarada total de ${fmt(r.D1.comTot)} kW com os fatores da Tabela 1 (${esc(G119_T1[+ed.atividade||0][0])}) = ${fmt(r.D1.comD)} kVA, sendo unidades ${fmt(r.D1.apt)} kVA e administração ${fmt(r.D1.adm)} kVA.`}<br>
  <b>D2 – Aparelhos:</b> ${cols.map(k=>`${esc(ED_TIPOS[k].n.toLowerCase())}: ${r.cnt[k]} aparelhos, ${typeof ED_TIPOS[k].col==="number"||ED_TIPOS[k].col==="ar"?"FD "+fmt(r.fdOf(k)):ED_TIPOS[k].col==="esp"?"100%/60%":"FD 1"} → ${fmt(r.D2col[k]||0)} kVA`).join("; ")||"—"}. Unidades ${fmt(r.D2.apt)} kVA; administração ${fmt(r.D2.adm)} kVA.<br>
  <b>D3 – Motores:</b> total ${fmt(r.motTot)} kVA (Tabelas 4 e 5); maior motor ${fmt(r.mots[0]||0)} kVA × 1,0 + demais ${fmt(r.motTot-(r.mots[0]||0))} kVA × 0,5 = ${fmt(r.D3)} kVA.<br>
  <b>Unidades:</b> (${fmt(r.D1.apt)} + ${fmt(r.D2.apt)}) × ${fmt(r.coef)} ${r.res?`(Tabela 7, ${r.nAptos} unidades)`:""} = ${fmt(r.Dapt)} kVA.<br>
@@ -453,10 +465,18 @@ function memorialColetivo(p,r){const rt=S.config.rt;const hoje=new Date().toLoca
  <p style="margin-top:40px">______________________________________<br>${esc(rt.nome)||"Responsável técnico"}<br>${esc(rt.registro)||"CREA / CFT nº ______"}${p.art?` · ART/TRT nº ${esc(p.art)}`:""}${rt.empresa?`<br>${esc(rt.empresa)}`:""}</p>`}
 
 /* ===================== Persistência ===================== */
-let saveTimers={},saving={};
-function touch(p){p.atualizadoEm=new Date().toISOString();clearTimeout(saveTimers[p.id]);saveTimers[p.id]=setTimeout(()=>{delete saveTimers[p.id];persist(p)},700)}
-async function persist(p){if(!store)return;if(saving[p.id]){saving[p.id]="again";return}saving[p.id]=true;
-  try{await store.save(JSON.parse(JSON.stringify(p)))}catch(e){toast(e&&e.code==="quota_exceeded"?"Limite de armazenamento atingido. Exclua projetos antigos.":"Não foi possível salvar agora. Tentaremos de novo na próxima edição.")}
+let saveTimers={},saving={},lastSaved={};
+function touch(p){p.atualizadoEm=new Date().toISOString();if(p.novo)return;clearTimeout(saveTimers[p.id]);saveTimers[p.id]=setTimeout(()=>{delete saveTimers[p.id];persist(p)},700)}
+// projeto novo só é gravado quando o usuário clica em "Salvar projeto"
+async function salvarNovo(p){if(!p)return;delete p.novo;p.atualizadoEm=new Date().toISOString();await persist(p);render();toast(p.pendente?"Não foi possível salvar. Tente de novo.":"Projeto salvo")}
+async function excluirProjeto(id){const p=S.projects.find(q=>q.id===id);if(!p)return;const nome=p.nome||"Projeto";
+  S.projects=S.projects.filter(q=>q.id!==id);if(S.cur===id)S.cur=null;S.confirmDel=false;S.delAsk=null;
+  clearTimeout(saveTimers[id]);delete saveTimers[id];
+  if(!p.novo){try{await store.del(id)}catch(err){toast("Não foi possível excluir agora. Tente de novo.");S.projects.push(p);render();return}}
+  render();toast(`“${nome}” excluído`)}
+async function persist(p){if(!store||p.novo)return;if(saving[p.id]){saving[p.id]="again";return}saving[p.id]=true;
+  try{const c=JSON.parse(JSON.stringify(p));delete c.pendente;await store.save(c);delete p.pendente;lastSaved[p.id]=c.atualizadoEm}
+  catch(e){p.pendente=true;const code=e&&e.code?` (código: ${e.code})`:"";toast(e&&e.code==="quota_exceeded"?"Limite de armazenamento atingido. Exclua projetos antigos.":`Não foi possível salvar agora${code}. Tentaremos de novo na próxima edição.`)}
   const again=saving[p.id]==="again";saving[p.id]=false;if(again)persist(p)}
 let cfgTimer;function touchCfg(){clearTimeout(cfgTimer);cfgTimer=setTimeout(async()=>{try{store&&await store.saveConfig(JSON.parse(JSON.stringify(S.config)))}catch(e){toast("Não foi possível salvar as configurações.")}},700)}
 function mergeCfg(c){const d=defaultConfig();return{...d,dvMax:+c.dvMax||d.dvMax,rho:+c.rho||d.rho,kind:"config",rt:{...d.rt,...(c.rt||{})}}}
@@ -471,7 +491,8 @@ async function initStore(){
   let db=null,user=null;
   try{if(window.claude&&window.claude.use){[db,user]=await Promise.all([window.claude.use("db"),window.claude.use("user")])}}catch(e){}
   let id=null;try{id=user?await user.id():null}catch(e){}
-  if(!db||!id){store=localStore();$("#storeNote").textContent="salvo neste navegador";render();return}
+  if(!db||!id){store=localStore();let ok=false;try{localStorage.setItem("entradaBT.teste","1");localStorage.removeItem("entradaBT.teste");ok=true}catch(e){}
+    $("#storeNote").textContent=ok?"salvo neste navegador":"⚠ esta visualização não salva: abra o link do claude.ai ou o arquivo no navegador";render();return}
   const col=db.collection("data/users/"+id);
   store={save:p=>col.doc(p.id).set(p),del:i=>col.doc(i).delete(),saveConfig:c=>col.doc("config").set(c)};
   $("#storeNote").textContent="carregando projetos…";
@@ -480,9 +501,13 @@ async function initStore(){
     if(!snap.metadata.fromCache){clearTimeout(timer);$("#storeNote").textContent="salvo na sua conta · privado"}
     const ps=[];let cfg=null;
     for(const d of snap.docs){const v=d.data();if(!v)continue;if(v.kind==="config")cfg=v;else if(v.kind==="projeto")ps.push(v)}
-    S.projects=ps.map(p=>{const loc=S.projects.find(q=>q.id===p.id);return loc&&(saveTimers[p.id]||saving[p.id])&&(loc.atualizadoEm>=p.atualizadoEm)?loc:p})
-      .concat(S.projects.filter(q=>!ps.find(p=>p.id===q.id)&&(saving[q.id]||saveTimers[q.id])));
-    if(cfg)S.config=mergeCfg(cfg);
+    // os dados do armazenamento chegam congelados (somente leitura): trabalhar sempre numa cópia editável.
+    // A versão local mais nova vence uma cópia antiga que chegue depois; se ela ainda não foi gravada, grava de novo.
+    S.projects=ps.map(p=>{const loc=S.projects.find(q=>q.id===p.id);
+        if(loc&&(loc.atualizadoEm||"")>(p.atualizadoEm||"")){if(!saving[p.id]&&!saveTimers[p.id]&&lastSaved[p.id]!==loc.atualizadoEm)persist(loc);return loc}
+        return JSON.parse(JSON.stringify(p))})
+      .concat(S.projects.filter(q=>!ps.find(p=>p.id===q.id)&&(saving[q.id]||saveTimers[q.id]||q.pendente||q.novo)));
+    if(cfg)S.config=mergeCfg(JSON.parse(JSON.stringify(cfg)));
     renderSide();if(!isTyping())renderMain();
   },err=>{clearTimeout(timer);$("#storeNote").textContent="armazenamento indisponível nesta visita"});
   render();
@@ -495,8 +520,10 @@ function renderSide(){
   const q=($("#busca").value||"").toLowerCase(),fs=$("#filtroStatus").value;
   const ps=S.projects.filter(p=>(!fs||p.status===fs)&&(!q||[p.nome,p.cliente,p.endereco,p.municipio,p.protocolo,p.instalacao].join(" ").toLowerCase().includes(q)))
     .sort((a,b)=>(b.atualizadoEm||"").localeCompare(a.atualizadoEm||""));
-  $("#plist").innerHTML=ps.length?ps.map(p=>{const s=stInfo(p.status);return`<button class="pitem${p.id===S.cur?" on":""}" data-id="${esc(p.id)}">
-    <b>${esc(p.nome||"Sem nome")}</b><small><span class="pill ${s[2]}">${s[1]}</span><span>${(NORMAS[p.conc]||NORMAS.cpfl).curto}</span><span>${esc(p.municipio)}</span></small></button>`}).join("")
+  $("#plist").innerHTML=ps.length?ps.map(p=>{const s=stInfo(p.status);return`<div class="prow"><button class="pitem${p.id===S.cur?" on":""}" data-id="${esc(p.id)}">
+    <b>${esc(p.nome||"Sem nome")}</b><small>${p.novo?`<span class="pill warn">Não salvo</span>`:""}<span class="pill ${s[2]}">${s[1]}</span><span>${(NORMAS[p.conc]||NORMAS.cpfl).curto}</span><span>${esc(p.municipio)}</span></small></button>
+    ${S.delAsk===p.id?`<div class="pconf">Excluir “${esc(p.nome||"Sem nome")}” de vez? <button class="btn sm danger" data-delid="${esc(p.id)}">Excluir</button><button class="btn sm" data-delcancel="1">Cancelar</button></div>`
+      :`<button class="pdel" data-delask="${esc(p.id)}" title="Excluir projeto" aria-label="Excluir ${esc(p.nome||"projeto")}">Excluir</button>`}</div>`}).join("")
     :`<p class="note">${S.projects.length?"Nenhum projeto com esse filtro.":"Nenhum projeto ainda."}</p>`;
 }
 const TABS=[["dados","Dados"],["cargas","Cargas e demanda"],["dim","Dimensionamento"],["unifilar","Diagrama unifilar"],["memorial","Memorial"],["tabelas","Normas e RT"]];
@@ -504,7 +531,7 @@ function renderMain(){
   const p=cur();const m=$("#main");
   if(!p&&S.tab!=="tabelas"){m.innerHTML=`<div class="card empty"><h3>Comece um projeto de entrada de energia</h3>
     <p>Cadastre o cliente e lance o quadro de cargas. O app calcula a demanda pelo método da GED 13, enquadra a categoria na tabela da CPFL ou da Enel SP e indica disjuntor, condutores, eletroduto, aterramento e poste. Depois gera o diagrama unifilar e o memorial descritivo.</p>
-    <div class="row" style="justify-content:center;margin-top:14px"><button class="btn pri" data-act="novo">+ Novo projeto</button><button class="btn" data-ex="casa-enel">Exemplo: casa Enel</button><button class="btn" data-ex="ed-enel">Exemplo: edifício Enel</button><button class="btn" data-ex="casa-cpfl">Exemplo: casa CPFL</button><button class="btn" data-ex="ed-cpfl">Exemplo: edifício CPFL</button><button class="btn" data-act="tabs-tabelas">Ver tabelas das normas</button></div></div>`;return}
+    <div class="row" style="justify-content:center;margin-top:14px"><button class="btn pri" data-act="novo">+ Novo projeto</button><button class="btn" data-ex="casa-enel">Exemplo: casa Enel</button><button class="btn" data-ex="ed-enel">Exemplo: edifício residencial Enel</button><button class="btn" data-ex="com-enel">Exemplo: edifício comercial Enel</button><button class="btn" data-ex="casa-cpfl">Exemplo: casa CPFL</button><button class="btn" data-ex="ed-cpfl">Exemplo: edifício CPFL</button><button class="btn" data-act="tabs-tabelas">Ver tabelas das normas</button></div></div>`;return}
   const tabs=`<nav class="tabs" role="tablist">${TABS.map(t=>(!p&&t[0]!=="tabelas")?"":`<button class="tab${S.tab===t[0]?" on":""}" role="tab" data-tab="${t[0]}">${p&&p.tipo==="coletivo"&&t[0]==="cargas"?"Edifício e demanda":t[1]}</button>`).join("")}</nav>`;
   let body="";
   if(S.tab==="tabelas")body=viewTabelas();
@@ -512,7 +539,9 @@ function renderMain(){
     body=S.tab==="dados"?viewDados(p):S.tab==="cargas"?viewEdificio(p,r):S.tab==="dim"?viewDimCol(p,r):S.tab==="unifilar"?`<div class="card"><h3>Diagrama unifilar <small>entrada coletiva</small></h3><div class="diag">${svgColetivo(p,r)}</div><div class="row" style="margin-top:10px"><button class="btn" data-act="dl-svg">Baixar SVG</button></div></div>`:viewMemorial(p,r)}
   else{const r=calc(p,S.config);
     body=S.tab==="dados"?viewDados(p):S.tab==="cargas"?viewCargas(p,r):S.tab==="dim"?viewDim(p,r):S.tab==="unifilar"?viewUnifilar(p,r):viewMemorial(p,r)}
-  m.innerHTML=tabs+body;
+  const bar=!p||S.tab==="tabelas"?"":p.novo?`<div class="savebar"><span><b>Projeto novo, ainda não salvo.</b> Preencha os dados e clique em salvar para guardar.</span><button class="btn pri" data-act="salvar">Salvar projeto</button></div>`
+    :`<div class="savebar ok">Projeto salvo · as alterações são gravadas automaticamente</div>`;
+  m.innerHTML=bar+tabs+body;
 }
 function fld(k,label,v,type="text",extra=""){return`<label class="f">${label}<input id="f_${k}" data-k="${k}" type="${type}" value="${esc(v)}" ${extra}></label>`}
 function sel(k,label,v,opts){return`<label class="f">${label}<select id="f_${k}" data-k="${k}">${opts.map(o=>{const[val,t]=Array.isArray(o)?o:[o,o];return`<option value="${esc(val)}"${val==v?" selected":""}>${esc(t)}</option>`}).join("")}</select></label>`}
@@ -723,22 +752,26 @@ document.addEventListener("change",e=>{const t=e.target;
  if(t.dataset.preset&&t.value!==""){const p=cur();const x=ED_PRESETS[+t.value];edPath(p,t.dataset.preset).push({d:x[0],t:x[1],q:x[2],p:x[3],fp:x[4]});touch(p);renderMain();return}
  if(t.id==="preset"&&t.value!==""){const p=cur();const x=PRESETS[+t.value];p.cargas.push({d:x[0],t:x[1],q:x[2],p:x[3],fp:x[4]});touch(p);renderMain();return}
  if(t.id==="impFile"&&t.files[0]){const fr=new FileReader();fr.onload=async()=>{try{const o=JSON.parse(fr.result);const ps=(o.projects||[]).filter(p=>p&&p.kind==="projeto"&&p.id);
-   for(const p of ps){const i=S.projects.findIndex(q=>q.id===p.id);if(i>=0)S.projects[i]=p;else S.projects.push(p);await persist(p)}
+   for(const p of ps){delete p.novo;const i=S.projects.findIndex(q=>q.id===p.id);if(i>=0)S.projects[i]=p;else S.projects.push(p);await persist(p)}
    if(o.config){S.config=mergeCfg(o.config);touchCfg()}render();toast(`${ps.length} projeto(s) importado(s)`)}catch(err){toast("Arquivo inválido: use um backup exportado por este app.")}t.value=""};fr.readAsText(t.files[0])}
 });
 document.addEventListener("click",async e=>{const b=e.target.closest("button,[data-act]");if(!b)return;
- if(b.dataset.id){S.cur=b.dataset.id;S.confirmDel=false;if(S.tab==="tabelas")S.tab="dados";render();return}
+ if(b.dataset.delask){S.delAsk=b.dataset.delask;renderSide();return}
+ if(b.dataset.delcancel){S.delAsk=null;renderSide();return}
+ if(b.dataset.delid){await excluirProjeto(b.dataset.delid);return}
+ if(b.dataset.id){S.cur=b.dataset.id;S.confirmDel=false;S.delAsk=null;if(S.tab==="tabelas")S.tab="dados";render();return}
  if(b.dataset.tab){S.tab=b.dataset.tab;S.confirmDel=false;renderMain();return}
  if(b.dataset.rm!==undefined){const p=cur();p.cargas.splice(+b.dataset.rm,1);touch(p);renderMain();return}
  const a=b.dataset.act||b.id;const p=cur();
- if(a==="btnNovo"||a==="novo"){const n=novoProjeto();S.projects.push(n);S.cur=n.id;S.tab="dados";persist(n);render();setTimeout(()=>{const el=$("#f_nome");el&&el.select()},0)}
+ if(a==="btnNovo"||a==="novo"){const n=novoProjeto({novo:true});S.projects.push(n);S.cur=n.id;S.tab="dados";S.delAsk=null;render();setTimeout(()=>{const el=$("#f_nome");el&&el.select()},0)}
  else if(b.dataset.ex){abrirExemplo(b.dataset.ex)}
  else if(a==="tabs-tabelas"){S.tab="tabelas";renderMain()}
  else if(a==="addcarga"){p.cargas.push({d:"",t:"outros",q:1,p:0,fp:1});touch(p);renderMain()}
  else if(a==="duplicar"){const n=JSON.parse(JSON.stringify(p));n.id=uid();n.nome=p.nome+" (cópia)";n.status="rascunho";n.protocolo="";n.dataProtocolo="";n.criadoEm=n.atualizadoEm=new Date().toISOString();S.projects.push(n);S.cur=n.id;persist(n);render();toast("Projeto duplicado")}
  else if(a==="del"){S.confirmDel=true;renderMain()}
  else if(a==="delno"){S.confirmDel=false;renderMain()}
- else if(a==="delok"){const id=p.id;S.projects=S.projects.filter(q=>q.id!==id);S.cur=null;S.confirmDel=false;clearTimeout(saveTimers[id]);delete saveTimers[id];try{await store.del(id)}catch(err){}render();toast("Projeto excluído")}
+ else if(a==="delok"){await excluirProjeto(p.id)}
+ else if(a==="salvar"){await salvarNovo(p)}
  else if(a==="copiar"){const txt=$("#memo").innerText;try{await navigator.clipboard.writeText(txt);toast("Memorial copiado")}catch(err){const rg=document.createRange();rg.selectNodeContents($("#memo"));const s=getSelection();s.removeAllRanges();s.addRange(rg);toast("Texto selecionado: use Ctrl+C")}}
  else if(a==="ed-add"){edPath(p,b.dataset.path).push({d:"",t:"outros",q:1,p:0,fp:1});touch(p);renderMain()}
  else if(a==="ed-rm"){edPath(p,b.dataset.path).splice(+b.dataset.i,1);touch(p);renderMain()}

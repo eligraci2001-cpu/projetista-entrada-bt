@@ -15,7 +15,9 @@ Lança-se o quadro de cargas e o app calcula a demanda, enquadra a categoria/tip
 - **Memorial descritivo** com dados do responsável técnico e ART/TRT (download .doc ou .html).
 - Controle de **andamento na concessionária** (rascunho → protocolado → aprovado → ligado).
 - **Backup** em JSON (exportar/importar).
-- Quatro projetos de exemplo (casa e edifício, Enel e CPFL).
+- Projeto novo só é gravado ao clicar em **Salvar projeto**; depois disso, as alterações são gravadas automaticamente.
+- Botão **Excluir** em cada projeto da lista, com confirmação.
+- Cinco projetos de exemplo: casa, edifício residencial e edifício comercial (Enel SP); casa e edifício (CPFL).
 
 ## Normas utilizadas
 
@@ -52,13 +54,19 @@ Fora do claude.ai, os projetos ficam no `localStorage` do navegador (chave `entr
 ## Estrutura
 
 ```
-├── index.html          # estrutura da página
+├── entrada-bt.html     # FONTE do app em arquivo único (é o que se edita e o que vai para o claude.ai)
+├── tools/build.py      # gera index.html e assets/ a partir de entrada-bt.html
+├── index.html          # estrutura da página (gerado)
 ├── assets/
 │   ├── style.css       # tema claro/escuro e layout
 │   └── app.js          # tabelas das normas, cálculos, telas e persistência
 ├── docs/screenshot.png
 └── .github/workflows/pages.yml
 ```
+
+### Como alterar o app
+
+Edite `entrada-bt.html` e depois rode `python tools/build.py` para atualizar `index.html`, `assets/style.css` e `assets/app.js`. Não edite os arquivos gerados direto: a próxima execução do script sobrescreve.
 
 Em `assets/app.js`, as tabelas das normas ficam no topo (`CPFL`, `ENEL`, `T3`–`T11`, `G119_*`, `ET0018_*`). As funções de cálculo principais são `calc()` (individual), `calcColetivo()` e `calcColetivoEnel()` (edifícios).
 
